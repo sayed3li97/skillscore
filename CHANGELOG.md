@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-06-12
+
+### Changed
+
+- Documentation only: the README now leads with a cover banner and a
+  terminal demo GIF (scoring the Flutter team's `flutter-add-widget-test`
+  skill at 90/A, then explaining a finding with its source guide). Images
+  are served from `raw.githubusercontent.com` so they render on pub.dev.
+  No code or behavior changes.
+
 ## [0.1.0] - 2026-06-12
 
 ### Added
@@ -25,4 +35,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `skillscore rules` and `skillscore explain <rule-id>` with rationale,
   fix, and source citations.
 
+[0.1.1]: https://github.com/sayed3li97/skillscore/releases/tag/v0.1.1
 [0.1.0]: https://github.com/sayed3li97/skillscore/releases/tag/v0.1.0

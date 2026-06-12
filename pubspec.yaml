@@ -2,7 +2,7 @@ name: skillscore
 description: >-
   Lint and score AI agent skills (SKILL.md) against the official Claude,
   Codex, and Antigravity authoring guides. Offline, deterministic CLI.
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/sayed3li97/skillscore
 homepage: https://github.com/sayed3li97/skillscore
 issue_tracker: https://github.com/sayed3li97/skillscore/issues
