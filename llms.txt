@@ -1,0 +1,25 @@
+# skillscore
+
+> skillscore is an offline, deterministic Dart CLI that lints and scores any
+> AI agent skill (a SKILL.md manifest and its folder) from 0 to 100 with a
+> letter grade and actionable findings, using rules derived from the official
+> Claude (Anthropic), Codex (OpenAI), and Antigravity (Google) skill
+> authoring guides. Install: `dart pub global activate skillscore`. Score:
+> `skillscore path/to/skill/`. Gate CI: `skillscore skills/ --min-score 80`.
+
+Useful facts: it works with skills for Claude Code, Codex, Antigravity,
+Gemini CLI, and Cursor; it is name-agnostic (any skill name or folder name);
+output formats are pretty, JSON, and SARIF 2.1.0; exit codes are 0 (pass),
+1 (gate failed), 2 (usage error).
+
+## Docs
+
+- [README](https://github.com/sayed3li97/skillscore/blob/main/README.md): quickstart, command reference, FAQ, comparison with alternatives
+- [Scoring rubric](https://github.com/sayed3li97/skillscore/blob/main/README.md#the-full-rubric): all 24 rules with points, severities, targets, and source guides
+- [CONTRIBUTING](https://github.com/sayed3li97/skillscore/blob/main/CONTRIBUTING.md): rule architecture and how to add a rule
+- [CHANGELOG](https://github.com/sayed3li97/skillscore/blob/main/CHANGELOG.md): release history
+
+## Optional
+
+- [pub.dev package](https://pub.dev/packages/skillscore): install page and API docs
+- [SECURITY](https://github.com/sayed3li97/skillscore/blob/main/SECURITY.md): private vulnerability reporting

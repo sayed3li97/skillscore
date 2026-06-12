@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an improvement that is not a new scoring rule
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: >-
+        Proposing a new scoring rule? Use the "Propose a new rule" template
+        instead — it asks for the required source-guide citation.

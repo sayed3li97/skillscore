@@ -1,0 +1,6 @@
+# Keep the pub.dev archive lean: the docs/ folder is the GitHub Pages
+# site (pub expects singular "doc/"), and CI/test fixtures are not
+# needed by package consumers.
+docs/
+.github/
+test/

@@ -1,0 +1,35 @@
+name: Bug report
+description: Something crashed, scored wrong, or behaved unexpectedly
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: skillscore version
+      placeholder: output of `skillscore --version`
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: >-
+        The command you ran and, ideally, a minimal SKILL.md that triggers
+        the problem.
+      placeholder: |
+        1. skillscore my-skill/ --target claude
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior (paste output)
+    validations:
+      required: true

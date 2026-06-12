@@ -1,0 +1,3 @@
+# Test fixtures must keep their exact bytes (the robustness suite
+# covers CRLF line endings and a UTF-8 BOM on purpose).
+test/fixtures/** -text

@@ -1,0 +1,31 @@
+name: skillscore
+description: >-
+  Lint and score AI agent skills (SKILL.md) against the official Claude,
+  Codex, and Antigravity authoring guides. Offline, deterministic CLI.
+version: 0.1.0
+repository: https://github.com/sayed3li97/skillscore
+homepage: https://github.com/sayed3li97/skillscore
+issue_tracker: https://github.com/sayed3li97/skillscore/issues
+documentation: https://github.com/sayed3li97/skillscore#readme
+topics:
+  - agent-skills
+  - skill-md
+  - linter
+  - claude
+  - ai-agents
+
+environment:
+  sdk: ^3.4.0
+
+executables:
+  skillscore:
+
+dependencies:
+  args: ^2.7.0
+  glob: ^2.1.3
+  path: ^1.9.0
+  yaml: ^3.1.3
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

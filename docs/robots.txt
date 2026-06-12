@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sayed3li97.github.io/skillscore/sitemap.xml

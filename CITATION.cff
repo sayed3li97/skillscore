@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use skillscore in your research or tooling, please cite it as below."
+title: "skillscore: a static analyzer and quality scorer for AI agent skills (SKILL.md)"
+type: software
+authors:
+  - family-names: "Alkamel"
+    given-names: "Sayed Ali"
+    email: "alkamelsayedali@gmail.com"
+repository-code: "https://github.com/sayed3li97/skillscore"
+url: "https://github.com/sayed3li97/skillscore"
+license: Apache-2.0
+version: 0.1.0
+date-released: "2026-06-12"
+keywords:
+  - agent-skills
+  - skill-md
+  - linter
+  - static-analysis
+  - ai-agents
+  - claude
+  - codex
+  - antigravity

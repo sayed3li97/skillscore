@@ -1,0 +1,51 @@
+name: Propose a new rule
+description: Suggest a new scoring rule for the rubric
+labels: [new-rule]
+body:
+  - type: input
+    id: source
+    attributes:
+      label: Source guide citation (required)
+      description: >-
+        Every skillscore rule must derive from an official authoring guide.
+        Link the section of the Anthropic, Antigravity, Codex, or official
+        Flutter skills guidance this rule comes from.
+      placeholder: "e.g. Anthropic skill authoring guide — 'Keep SKILL.md under 500 lines'"
+    validations:
+      required: true
+  - type: textarea
+    id: check
+    attributes:
+      label: What should the rule check?
+      description: Describe the pass and fail conditions precisely.
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Rubric category
+      options:
+        - A — Frontmatter validity
+        - B — Description quality
+        - C — Conciseness & token economy
+        - D — Structure & progressive disclosure
+        - E — Instruction quality
+        - F — Content hygiene
+        - G — Safety & scripts (penalty)
+        - New category
+    validations:
+      required: true
+  - type: input
+    id: weight
+    attributes:
+      label: Suggested points and severity
+      placeholder: "e.g. 4 points, WARNING, all targets"
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: One passing and one failing example
+      description: Small SKILL.md snippets that should pass and fail.
+    validations:
+      required: true
