@@ -1,5 +1,9 @@
 # skillscore — lint and score AI agent skills (SKILL.md)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/cover.png" alt="skillscore — score your AI agent's SKILL.md 0 to 100 against the Claude, Codex, and Antigravity authoring guides" width="100%">
+</p>
+
 [![CI](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml/badge.svg)](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml)
 [![pub package](https://img.shields.io/pub/v/skillscore.svg)](https://pub.dev/packages/skillscore)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -20,6 +24,16 @@ Codex, Antigravity, Gemini CLI, and Cursor. Because an agent keeps every
 skill's `name` and `description` in its context budget permanently, **a vague
 or malformed skill is worse than no skill**. skillscore catches exactly those
 problems before a skill ships.
+
+## See it in action
+
+Here's skillscore grading the Flutter team's own `flutter-add-widget-test`
+skill — a 90/A — then explaining one of its findings, with the source guide
+the rule comes from:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/skillscore-demo.gif" alt="Terminal recording: skillscore scores the Flutter team's flutter-add-widget-test skill 90 out of 100 grade A with per-category bars and two findings, then skillscore explain shows the rule rationale and its Flutter authoring-guide source" width="85%">
+</p>
 
 ## Quickstart
 
