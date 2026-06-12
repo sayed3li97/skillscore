@@ -1,5 +1,9 @@
 # skillscore
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/cover.png" alt="skillscore — score your AI agent's SKILL.md 0 to 100 against the Claude, Codex, and Antigravity authoring guides" width="100%">
+</p>
+
 **Lint and score any AI agent skill (SKILL.md) against the official Claude,
 Codex, and Antigravity authoring guides — offline Dart CLI.**
 
@@ -7,6 +11,15 @@ skillscore reads a `SKILL.md` manifest (or a whole monorepo of them),
 applies 24 rules derived from the official skill-authoring guides, and
 prints a 0–100 score, a letter grade, and actionable findings with fix
 hints. It is offline, deterministic, and built for CI gating.
+
+## See it in action
+
+skillscore grading the Flutter team's own `flutter-add-widget-test` skill
+(90/A), then explaining a finding with its source guide:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/skillscore-demo.gif" alt="Terminal recording: skillscore scores the Flutter team's flutter-add-widget-test skill 90 out of 100 grade A, then skillscore explain shows the rule rationale and its Flutter authoring-guide source" width="90%">
+</p>
 
 ## Quickstart
 
