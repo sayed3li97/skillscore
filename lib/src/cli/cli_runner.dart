@@ -99,9 +99,9 @@ String _usage(ArgParser parser) => '''
 skillscore — lint and score AI agent skills (SKILL.md).
 
 Usage:
-  skillscore <path>             Score a manifest, skill folder, or tree
-  skillscore rules              List every rule
-  skillscore explain <rule-id>  Explain one rule and its fix
+  skillscore <path> [<path> ...]  Score one or more manifests, folders, or trees
+  skillscore rules                List every rule
+  skillscore explain <rule-id>    Explain one rule and its fix
   skillscore --version
 
 Options:
@@ -168,21 +168,44 @@ int _score(
     }
   }
 
-  final path = args.rest.first;
+  final paths = args.rest;
   final skillParser = SkillParser();
   final warnings = <String>[];
+  final seen = <String>{};
+  final manifests = <String>[];
 
-  List<String> manifests;
-  try {
-    manifests = skillParser.discoverManifests(path, warnings: warnings);
-  } on SkillInputException catch (e) {
-    err.writeln('Error: ${e.message}');
-    return exitUsage;
+  for (final path in paths) {
+    List<String> found;
+    try {
+      found = skillParser.discoverManifests(path, warnings: warnings);
+    } on SkillInputException catch (e) {
+      if (paths.length == 1) {
+        err.writeln('Error: ${e.message}');
+        return exitUsage;
+      }
+      warnings.add('$path: ${e.message}');
+      continue;
+    }
+    if (found.isEmpty) {
+      if (paths.length == 1) {
+        err.writeln('Error: no skill manifest (SKILL.md) found under: $path');
+        return exitUsage;
+      }
+      warnings.add('no skill manifest (SKILL.md) found under: $path');
+      continue;
+    }
+    for (final m in found) {
+      if (seen.add(m)) manifests.add(m);
+    }
   }
+
   if (manifests.isEmpty) {
-    err.writeln('Error: no skill manifest (SKILL.md) found under: $path');
+    err.writeln('Error: no skill manifests found under any of the given paths.');
     return exitUsage;
   }
+
+  // Sort for deterministic output when paths are combined from multiple inputs.
+  manifests.sort();
 
   final scorer = Scorer(registry);
   final results = <ScoreResult>[];
@@ -200,7 +223,7 @@ int _score(
     }
   }
   if (results.isEmpty) {
-    err.writeln('Error: no readable skill manifests under: $path');
+    err.writeln('Error: no readable skill manifests found.');
     return exitUsage;
   }
 

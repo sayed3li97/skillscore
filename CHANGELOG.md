@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-13
+
+### Added
+
+- **Multi-path scoring:** pass two or more paths in one command and get a
+  combined report with a summary line:
+  `skillscore skill-a/ skill-b/ skill-c/`
+- Duplicate manifests are silently deduplicated, so overlapping paths
+  (e.g. a tree root and one of its children) are each scored once.
+- When multiple paths are given and one is invalid or contains no
+  manifest, the CLI warns on stderr and scores the remaining paths
+  rather than aborting. All paths invalid still exits with code 2.
+- Usage string updated to reflect `<path> [<path> ...]`.
+
 ## [0.1.1] - 2026-06-12
 
 ### Changed
@@ -35,5 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `skillscore rules` and `skillscore explain <rule-id>` with rationale,
   fix, and source citations.
 
+[0.2.0]: https://github.com/sayed3li97/skillscore/releases/tag/v0.2.0
 [0.1.1]: https://github.com/sayed3li97/skillscore/releases/tag/v0.1.1
 [0.1.0]: https://github.com/sayed3li97/skillscore/releases/tag/v0.1.0
