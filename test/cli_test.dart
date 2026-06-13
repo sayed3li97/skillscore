@@ -122,6 +122,99 @@ void main() {
     });
   });
 
+  group('multi-path scoring', () {
+    test('scores two explicit skill folders', () async {
+      final result = await run([
+        fixture('excellent/pdf-form-filler'),
+        fixture('mediocre/spreadsheet-skill'),
+        '--no-color',
+        '--quiet',
+      ]);
+      expect(result.code, exitOk);
+      expect(result.out, contains('pdf-form-filler'));
+      expect(result.out,
+          contains('csv-to-xlsx')); // frontmatter name of spreadsheet-skill
+      final lines = result.out.trim().split('\n');
+      expect(lines.length, 2); // one line per skill in quiet mode
+    });
+
+    test('deduplicates the same path given twice', () async {
+      final result = await run([
+        fixture('excellent/pdf-form-filler'),
+        fixture('excellent/pdf-form-filler'),
+        '--no-color',
+        '--quiet',
+      ]);
+      expect(result.code, exitOk);
+      final lines = result.out.trim().split('\n');
+      expect(lines.length, 1); // scored once, not twice
+    });
+
+    test('deduplicates when a tree path overlaps an explicit child path',
+        () async {
+      final result = await run([
+        fixture('excellent'),
+        fixture('excellent/pdf-form-filler'),
+        '--no-color',
+        '--quiet',
+      ]);
+      expect(result.code, exitOk);
+      final lines = result.out.trim().split('\n');
+      expect(lines.where((l) => l.contains('pdf-form-filler')).length, 1);
+    });
+
+    test('shows summary for multiple paths', () async {
+      final result = await run([
+        fixture('excellent/pdf-form-filler'),
+        fixture('mediocre/spreadsheet-skill'),
+        '--no-color',
+      ]);
+      expect(result.code, exitOk);
+      expect(result.out, contains('skills scored'));
+      expect(result.out, contains('average'));
+    });
+
+    test('--min-score fails when any score is below threshold', () async {
+      final result = await run([
+        fixture('excellent/pdf-form-filler'),
+        fixture('mediocre/spreadsheet-skill'),
+        '--min-score',
+        '90',
+        '--quiet',
+      ]);
+      expect(result.code, exitFailedGate);
+    });
+
+    test('--format json includes all skills from multiple paths', () async {
+      final result = await run([
+        fixture('excellent/pdf-form-filler'),
+        fixture('mediocre/spreadsheet-skill'),
+        '--format',
+        'json',
+      ]);
+      expect(result.code, exitOk);
+      final decoded = jsonDecode(result.out) as Map<String, dynamic>;
+      expect(decoded['skills'], hasLength(2));
+    });
+
+    test('bad path among valid paths warns and continues', () async {
+      final result = await run([
+        fixture('excellent/pdf-form-filler'),
+        '/no/such/path-anywhere',
+        '--no-color',
+        '--quiet',
+      ]);
+      expect(result.code, exitOk);
+      expect(result.out, contains('pdf-form-filler'));
+      expect(result.err, isNotEmpty);
+    });
+
+    test('all bad paths exits 2', () async {
+      final result = await run(['/no/such/a', '/no/such/b']);
+      expect(result.code, exitUsage);
+    });
+  });
+
   group('rules and explain commands', () {
     test('rules lists every rule with source guides', () async {
       final result = await run(['rules']);
