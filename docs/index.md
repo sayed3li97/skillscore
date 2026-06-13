@@ -5,12 +5,21 @@
 </p>
 
 **Lint and score any AI agent skill (SKILL.md) against the official Claude,
-Codex, and Antigravity authoring guides — offline Dart CLI.**
+Codex, and Antigravity authoring guides.**
+
+Available as an **offline Dart CLI** for terminals and CI, and as a
+**VS Code extension** for inline scoring inside your editor.
+
+| | Install |
+|---|---|
+| **CLI** | `dart pub global activate skillscore` |
+| **VS Code / Cursor / Windsurf** | [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore) |
+| **Antigravity IDE / VSCodium** | [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore) |
 
 skillscore reads a `SKILL.md` manifest (or a whole monorepo of them),
 applies 24 rules derived from the official skill-authoring guides, and
-prints a 0–100 score, a letter grade, and actionable findings with fix
-hints. It is offline, deterministic, and built for CI gating.
+produces a 0–100 score, a letter grade, and actionable findings with fix
+hints. Offline, deterministic, and built for CI gating.
 
 ## See it in action
 
@@ -27,7 +36,22 @@ Multi-path scoring — three skills from [addyosmani/agent-skills](https://githu
   <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/multipath-demo.gif" alt="Terminal recording: skillscore scores three agent-skills in one command showing 91/A, 88/B, and 77/C, then drills into the 77/C skill to show the missing Safety section error and vague description warning" width="90%">
 </p>
 
-## Quickstart
+## Editor extension
+
+Score SKILL.md files without leaving your editor. The extension adds inline
+squiggly underlines on every failing rule, a hover tooltip with the fix hint
+and rule ID, a sidebar panel with per-category scores and progress bars, and
+a live status-bar indicator.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/skillscore-plugin-demo.gif" alt="VS Code / Antigravity IDE extension showing inline diagnostics, hover tooltip, and Skillscore sidebar panel scoring a SKILL.md file" width="90%">
+</p>
+
+Install from the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore) (VS Code, Cursor, Windsurf) or [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore) (Antigravity IDE, VSCodium). Source at [skillscore-vscode](https://github.com/sayed3li97/skillscore-vscode).
+
+---
+
+## CLI quickstart
 
 ```bash
 dart pub global activate skillscore
@@ -42,9 +66,9 @@ skillscore skills/ --min-score 80  # CI gate
 
 ## How the score works
 
-100 points across six categories — frontmatter validity (15), description
+100 points across six categories: frontmatter validity (15), description
 quality (25), conciseness (15), structure (15), instruction quality (20),
-hygiene (10) — plus a safety penalty (up to −15) when a skill ships scripts
+hygiene (10); plus a safety penalty (up to -15) when a skill ships scripts
 without documenting them. Grades: A 90+, B 80+, C 70+, D 60+, F below.
 
 The [full rubric with every rule, weight, and source citation](https://github.com/sayed3li97/skillscore#the-full-rubric)
@@ -56,8 +80,7 @@ is in the README, or run `skillscore rules`.
 CLI, and Cursor all share the SKILL.md format; score against one vendor's
 rules with `--target` or use the portable `universal` default.
 
-**Is it offline?** Yes — no network calls, local files only, deterministic
-output.
+**Is it offline?** Yes. No network calls, local files only, deterministic output.
 
 **Where do the rules come from?** Every rule cites the official guide it
 derives from (Anthropic, Antigravity, Codex, or Flutter's official skills
@@ -65,6 +88,9 @@ practice); `skillscore explain <rule-id>` prints the citation.
 
 ## Links
 
-- [GitHub repository](https://github.com/sayed3li97/skillscore)
+- [CLI GitHub repository](https://github.com/sayed3li97/skillscore)
 - [pub.dev package](https://pub.dev/packages/skillscore)
+- [VS Code extension](https://github.com/sayed3li97/skillscore-vscode)
+- [VS Marketplace listing](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore)
+- [Open VSX listing](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore)
 - [Contributing guide](https://github.com/sayed3li97/skillscore/blob/main/CONTRIBUTING.md)
