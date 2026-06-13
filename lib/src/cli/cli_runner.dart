@@ -200,7 +200,8 @@ int _score(
   }
 
   if (manifests.isEmpty) {
-    err.writeln('Error: no skill manifests found under any of the given paths.');
+    err.writeln(
+        'Error: no skill manifests found under any of the given paths.');
     return exitUsage;
   }
 

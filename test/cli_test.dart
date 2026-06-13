@@ -132,7 +132,8 @@ void main() {
       ]);
       expect(result.code, exitOk);
       expect(result.out, contains('pdf-form-filler'));
-      expect(result.out, contains('csv-to-xlsx')); // frontmatter name of spreadsheet-skill
+      expect(result.out,
+          contains('csv-to-xlsx')); // frontmatter name of spreadsheet-skill
       final lines = result.out.trim().split('\n');
       expect(lines.length, 2); // one line per skill in quiet mode
     });
