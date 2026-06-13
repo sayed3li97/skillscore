@@ -21,6 +21,12 @@ skillscore grading the Flutter team's own `flutter-add-widget-test` skill
   <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/skillscore-demo.gif" alt="Terminal recording: skillscore scores the Flutter team's flutter-add-widget-test skill 90 out of 100 grade A, then skillscore explain shows the rule rationale and its Flutter authoring-guide source" width="90%">
 </p>
 
+Multi-path scoring — three skills from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) in one command, then a drill-down into the lowest scorer:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/multipath-demo.gif" alt="Terminal recording: skillscore scores three agent-skills in one command showing 91/A, 88/B, and 77/C, then drills into the 77/C skill to show the missing Safety section error and vague description warning" width="90%">
+</p>
+
 ## Quickstart
 
 ```bash
@@ -28,6 +34,7 @@ dart pub global activate skillscore
 
 skillscore path/to/SKILL.md        # one skill
 skillscore path/to/skills/         # every skill in a tree
+skillscore skill-a/ skill-b/ skill-c/  # specific skills in one shot
 skillscore my-skill/ --target claude
 skillscore my-skill/ --format json
 skillscore skills/ --min-score 80  # CI gate

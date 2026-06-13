@@ -27,12 +27,18 @@ problems before a skill ships.
 
 ## See it in action
 
-Here's skillscore grading the Flutter team's own `flutter-add-widget-test`
-skill — a 90/A — then explaining one of its findings, with the source guide
-the rule comes from:
+Score a single skill — here, the Flutter team's own `flutter-add-widget-test`
+(90/A) — with a full per-category breakdown and cited findings:
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/skillscore-demo.gif" alt="Terminal recording: skillscore scores the Flutter team's flutter-add-widget-test skill 90 out of 100 grade A with per-category bars and two findings, then skillscore explain shows the rule rationale and its Flutter authoring-guide source" width="85%">
+</p>
+
+Or scan several skills at once and drill into the lowest scorer — here,
+three skills from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills):
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/multipath-demo.gif" alt="Terminal recording: skillscore scores three agent-skills in one command (spec-driven-development 91/A, test-driven-development 88/B, performance-optimization 77/C), then a second command drills into performance-optimization showing the missing Safety section error and vague description warning" width="85%">
 </p>
 
 ## Quickstart
@@ -46,6 +52,9 @@ skillscore path/to/SKILL.md
 
 # Score every skill in a folder or monorepo
 skillscore path/to/skills/
+
+# Score multiple specific skills in one command
+skillscore skill-a/ skill-b/ skill-c/
 
 # Pick a target ruleset
 skillscore my-skill/ --target claude
@@ -79,7 +88,7 @@ csv-to-xlsx  (skills/spreadsheet-skill/SKILL.md)
 ## Commands and flags
 
 ```text
-skillscore <path>                Score a manifest, a skill folder, or a tree of skills
+skillscore <path> [<path> ...]   Score one or more manifests, folders, or trees
 skillscore rules                 List every rule: id, title, weight, targets, source guide
 skillscore explain <rule-id>     Print a rule's rationale, the fix, and its source guide
 skillscore --version
@@ -177,6 +186,13 @@ same score and finding order.
 `skillscore path/to/repo/` — it walks the tree, finds every folder with a
 `SKILL.md` (case-insensitive), and scores each one, deterministically
 ordered by path.
+
+**How do I score a specific set of skills in one command?**
+Pass each path as a separate argument: `skillscore skill-a/ skill-b/ skill-c/`.
+You get a combined report with a summary line showing the count, average, and
+lowest score. Duplicate paths are silently deduplicated, so overlapping
+arguments (e.g. a tree root and one of its children) each score once. If one
+path is invalid, the rest still score and the bad path is reported as a warning.
 
 **Does my skill have to be named a certain way?**
 No. skillscore is name-agnostic: the frontmatter `name`, the folder name,
