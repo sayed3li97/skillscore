@@ -6,6 +6,8 @@
 
 [![CI](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml/badge.svg)](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml)
 [![pub package](https://img.shields.io/pub/v/skillscore.svg)](https://pub.dev/packages/skillscore)
+[![VS Marketplace](https://img.shields.io/visual-studio-marketplace/v/sayed-ali-alkamel.skillscore?label=VS%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore)
+[![Open VSX](https://img.shields.io/open-vsx/v/sayed-ali-alkamel/skillscore?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 **skillscore** statically analyzes any AI agent skill — a `SKILL.md` manifest
@@ -40,6 +42,14 @@ three skills from [addyosmani/agent-skills](https://github.com/addyosmani/agent-
 <p align="center">
   <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/multipath-demo.gif" alt="Terminal recording: skillscore scores three agent-skills in one command (spec-driven-development 91/A, test-driven-development 88/B, performance-optimization 77/C), then a second command drills into performance-optimization showing the missing Safety section error and vague description warning" width="85%">
 </p>
+
+## Editor integration
+
+Prefer to score inside your IDE? The **[Skillscore VS Code extension](https://github.com/sayed3li97/skillscore-vscode)** wraps this CLI and adds inline diagnostics, hover tooltips, a sidebar score panel, and a live status-bar indicator — available for VS Code, Antigravity IDE, VSCodium, and Cursor.
+
+Install from the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore) or [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore).
+
+---
 
 ## Quickstart
 
