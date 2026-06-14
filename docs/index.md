@@ -36,6 +36,33 @@ Multi-path scoring — three skills from [addyosmani/agent-skills](https://githu
   <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/multipath-demo.gif" alt="Terminal recording: skillscore scores three agent-skills in one command showing 91/A, 88/B, and 77/C, then drills into the 77/C skill to show the missing Safety section error and vague description warning" width="90%">
 </p>
 
+## Token budget
+
+Every scorecard now shows the BPE token cost of each skill, split by the two
+scopes in which agent runtimes load SKILL.md content:
+
+```
+  Tokens  description (permanent)    67 gpt-4   ~74 claude
+          full manifest (active)   1474 gpt-4  ~1622 claude
+```
+
+**Permanent** is the per-prompt cost paid so the agent knows the skill exists.
+**Active** is the per-invocation cost paid only when the skill fires.
+
+Tested on all 31 skills from [google/skills](https://github.com/google/skills).
+Description tokens ranged from 24 to 142 — a 6x spread. The 56/F `gke-basics`
+skill pays 142 tokens on every prompt for discovery; the 95/A
+`agent-platform-tuning-management` pays 67. Better skill, lower cost.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/token-demo.gif" alt="Terminal recording: skillscore scans 31 Google skills showing scores and token counts, then drills into the top scorer (95/A, 67-token description) and the lowest (56/F, 142-token description)" width="90%">
+</p>
+
+Counts use cl100k_base BPE (exact for GPT-4/Codex; Claude adds a 10% estimate).
+Token counts appear in `--format json` under a `tokens` key for CI and dashboards.
+
+---
+
 ## Editor extension
 
 Score SKILL.md files without leaving your editor. The extension adds inline
@@ -93,4 +120,5 @@ practice); `skillscore explain <rule-id>` prints the citation.
 - [VS Code extension](https://github.com/sayed3li97/skillscore-vscode)
 - [VS Marketplace listing](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore)
 - [Open VSX listing](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore)
+- [google/skills](https://github.com/google/skills) — official Google Cloud skill library used in the token-budget demo
 - [Contributing guide](https://github.com/sayed3li97/skillscore/blob/main/CONTRIBUTING.md)
