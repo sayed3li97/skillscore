@@ -64,12 +64,10 @@ class PrettyReporter {
       buffer.writeln();
       final descGpt = tc.descriptionCl100k.toString().padLeft(4);
       final maniGpt = tc.manifestCl100k.toString().padLeft(4);
-      buffer.writeln(
-          '  ${_paint('Tokens', '2')}  '
+      buffer.writeln('  ${_paint('Tokens', '2')}  '
           'description (permanent)  $descGpt gpt-4   '
           '~${tc.descriptionClaude} claude');
-      buffer.writeln(
-          '          '
+      buffer.writeln('          '
           'full manifest (active)   $maniGpt gpt-4   '
           '~${tc.manifestClaude} claude');
     }
