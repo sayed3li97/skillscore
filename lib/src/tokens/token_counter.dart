@@ -58,8 +58,7 @@ class TokenCounter {
   TiktokenEncoder? _encoder;
 
   TiktokenEncoder _enc() {
-    return _encoder ??=
-        Tiktoken.getEncoder(TiktokenEncodingType.cl100k_base);
+    return _encoder ??= Tiktoken.getEncoder(TiktokenEncodingType.cl100k_base);
   }
 
   /// Returns the number of cl100k_base tokens in [text].
