@@ -61,6 +61,16 @@ skill pays 142 tokens on every prompt for discovery; the 95/A
 Counts use cl100k_base BPE (exact for GPT-4/Codex; Claude adds a 10% estimate).
 Token counts appear in `--format json` under a `tokens` key for CI and dashboards.
 
+### API-validated accuracy
+
+The +10% estimate was validated against the official Anthropic `count_tokens` API
+across all 31 Google skills: mean actual overhead +10.2%, median exactly +10.0%,
+range +0% to +20% (keyword-dense descriptions run higher; clean prose runs lower).
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/validate-demo.gif" alt="Terminal recording: Anthropic count_tokens API validation across all 31 Google skills showing mean overhead of +10.2% and median of +10.0%" width="90%">
+</p>
+
 ---
 
 ## Editor extension

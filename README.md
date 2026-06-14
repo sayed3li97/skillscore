@@ -54,7 +54,7 @@ Every scorecard now includes the BPE token cost of each skill, split by the two 
 
 **Permanent** is the per-prompt cost — the agent loads the `description` field on every call so it knows which skills exist. **Active** is the per-invocation cost, paid only when the agent decides to use the skill.
 
-The counts use the **cl100k_base** BPE vocabulary (exact for GPT-4 and Codex; Claude estimates add 10% overhead, matching observed Anthropic API behaviour for English prose within ~5-8%).
+The counts use the **cl100k_base** BPE vocabulary (exact for GPT-4 and Codex; Claude estimates add 10% overhead).
 
 Tested on all 31 skills from [google/skills](https://github.com/google/skills):
 
@@ -65,6 +65,23 @@ Tested on all 31 skills from [google/skills](https://github.com/google/skills):
 Description token counts across the Google skills repo ranged from **24 to 142** — a 6x spread. The 56/F `gke-basics` skill pays 142 tokens on every prompt just for discovery, while the 95/A `agent-platform-tuning-management` skill pays 67. Less tokens, better score, better skill.
 
 Token counts also appear in `--format json` under a `tokens` key, making them available to dashboards and CI pipelines.
+
+### API-validated accuracy
+
+The +10% Claude estimate was validated against the official **Anthropic `count_tokens` API** across all 31 Google skills:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/validate-demo.gif" alt="Terminal recording: skillscore estimate for gke-basics followed by the Anthropic count_tokens API validation across all 31 Google skills, showing mean overhead of +10.2% and median of +10.0%" width="85%">
+</p>
+
+| Metric | Value |
+|---|---|
+| Skills validated | 31 (all of google/skills) |
+| Mean actual Claude overhead vs cl100k | +10.2% |
+| Median | +10.0% |
+| Range | +0% to +20% (varies with keyword density) |
+
+The heuristic is accurate on average. Individual skills with dense trigger-keyword lists in their descriptions (like `gke-basics`) run toward +18-20%; clean prose descriptions run toward 0-6%.
 
 ## Editor integration
 
