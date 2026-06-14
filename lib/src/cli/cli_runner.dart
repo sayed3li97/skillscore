@@ -11,6 +11,7 @@ import '../reporting/pretty_reporter.dart';
 import '../reporting/sarif_reporter.dart';
 import '../rules/registry.dart';
 import '../scoring/scorer.dart';
+import '../tokens/token_counter.dart';
 import '../version.dart';
 
 /// Exit code for success.
@@ -208,7 +209,7 @@ int _score(
   // Sort for deterministic output when paths are combined from multiple inputs.
   manifests.sort();
 
-  final scorer = Scorer(registry);
+  final scorer = Scorer(registry, tokenCounter: TokenCounter());
   final results = <ScoreResult>[];
   for (final manifest in manifests) {
     try {

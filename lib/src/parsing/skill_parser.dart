@@ -111,6 +111,8 @@ class SkillParser {
     return parseContent(content, manifestPath: manifestPath);
   }
 
+
+
   /// Parses raw [content] as a manifest located at [manifestPath].
   ///
   /// Handles a UTF-8 BOM and both `\n` and `\r\n` line endings without
@@ -184,6 +186,7 @@ class SkillParser {
     return SkillDocument(
       manifestPath: p.normalize(manifestPath),
       skillRoot: skillRoot,
+      rawContent: text,
       frontmatter: frontmatter,
       hasFrontmatterDelimiters: hasDelimiters,
       frontmatterValid: valid,

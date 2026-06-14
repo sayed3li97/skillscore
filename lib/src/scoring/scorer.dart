@@ -3,6 +3,7 @@
 import '../model/finding.dart';
 import '../model/skill_document.dart';
 import '../rules/registry.dart';
+import '../tokens/token_counter.dart';
 
 /// Awarded vs. maximum points for one rubric category.
 class CategoryScore {
@@ -38,6 +39,7 @@ class ScoreResult {
     required this.categories,
     required this.penalty,
     required this.findings,
+    this.tokenCounts,
   });
 
   /// The scored skill.
@@ -61,6 +63,10 @@ class ScoreResult {
   /// All findings, sorted by category, then rule id, then line.
   final List<Finding> findings;
 
+  /// BPE token counts for the description field and the full manifest.
+  /// Null when the CLI was invoked without a [TokenCounter].
+  final TokenCounts? tokenCounts;
+
   /// Whether any finding has the given [severity].
   bool hasSeverity(Severity severity) =>
       findings.any((f) => f.severity == severity);
@@ -81,10 +87,17 @@ String gradeFor(int score) {
 /// produce the same score and the same finding order.
 class Scorer {
   /// Creates a scorer over [registry].
-  Scorer(this.registry);
+  ///
+  /// Provide [tokenCounter] to include BPE token counts in each [ScoreResult].
+  /// Omit it (or pass null) to skip token counting — useful in unit tests.
+  Scorer(this.registry, {this.tokenCounter});
 
   /// The rule registry to score against.
   final RuleRegistry registry;
+
+  /// Optional token counter. When non-null, each [ScoreResult] will carry
+  /// a populated [ScoreResult.tokenCounts].
+  final TokenCounter? tokenCounter;
 
   /// Scores [doc] under [target].
   ///
@@ -152,6 +165,10 @@ class Scorer {
       categories: categories,
       penalty: penalty,
       findings: findings,
+      tokenCounts: tokenCounter?.tokenize(
+        description: doc.description,
+        manifest: doc.rawContent,
+      ),
     );
   }
 }

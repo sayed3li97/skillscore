@@ -30,6 +30,7 @@ class SkillDocument {
   const SkillDocument({
     required this.manifestPath,
     required this.skillRoot,
+    required this.rawContent,
     required this.frontmatter,
     required this.hasFrontmatterDelimiters,
     required this.frontmatterValid,
@@ -51,6 +52,10 @@ class SkillDocument {
 
   /// The directory containing the manifest.
   final String skillRoot;
+
+  /// The raw manifest text (BOM-stripped, original line endings preserved).
+  /// Used for token counting; contains both frontmatter and body.
+  final String rawContent;
 
   /// The parsed YAML frontmatter, or an empty map when missing/invalid.
   final Map<String, Object?> frontmatter;

@@ -31,31 +31,51 @@ class JsonReporter {
     return const JsonEncoder.withIndent('  ').convert(object);
   }
 
-  Map<String, Object?> _skill(ScoreResult result) => {
-        'name': result.doc.displayName,
-        'path': result.doc.manifestPath,
-        'score': result.score,
-        'grade': result.grade,
-        'penalty': result.penalty,
-        'categories': [
-          for (final cat in result.categories)
-            {
-              'id': cat.category,
-              'name': cat.name,
-              'awarded': cat.awarded,
-              'max': cat.max,
-            },
-        ],
-        'findings': [
-          for (final f in result.findings)
-            {
-              'ruleId': f.ruleId,
-              'severity': f.severity.name,
-              'message': f.message,
-              'line': f.line,
-              'fixHint': f.fixHint,
-              'sourceGuide': f.sourceGuide,
-            },
-        ],
-      };
+  Map<String, Object?> _skill(ScoreResult result) {
+    final tc = result.tokenCounts;
+    return {
+      'name': result.doc.displayName,
+      'path': result.doc.manifestPath,
+      'score': result.score,
+      'grade': result.grade,
+      'penalty': result.penalty,
+      if (tc != null)
+        'tokens': {
+          'encoding': 'cl100k_base',
+          'claudeNote':
+              'Claude estimate applies +10% overhead to cl100k_base counts '
+              '(within ~5-8% of actual Anthropic API counts for English prose).',
+          'description': {
+            'scope': 'permanent: loaded on every prompt for skill discovery',
+            'gpt4': tc.descriptionCl100k,
+            'claudeEstimate': tc.descriptionClaude,
+          },
+          'manifest': {
+            'scope': 'active: loaded only when the skill is invoked',
+            'gpt4': tc.manifestCl100k,
+            'claudeEstimate': tc.manifestClaude,
+          },
+        },
+      'categories': [
+        for (final cat in result.categories)
+          {
+            'id': cat.category,
+            'name': cat.name,
+            'awarded': cat.awarded,
+            'max': cat.max,
+          },
+      ],
+      'findings': [
+        for (final f in result.findings)
+          {
+            'ruleId': f.ruleId,
+            'severity': f.severity.name,
+            'message': f.message,
+            'line': f.line,
+            'fixHint': f.fixHint,
+            'sourceGuide': f.sourceGuide,
+          },
+      ],
+    };
+  }
 }

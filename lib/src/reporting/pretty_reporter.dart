@@ -58,6 +58,22 @@ class PrettyReporter {
     buffer.writeln(
         '${_paint(result.doc.displayName, '1')}  (${result.doc.manifestPath})');
     buffer.writeln('  ${_paint(scoreLine, '${_gradeColor(result.grade)};1')}');
+
+    final tc = result.tokenCounts;
+    if (tc != null) {
+      buffer.writeln();
+      final descGpt = tc.descriptionCl100k.toString().padLeft(4);
+      final maniGpt = tc.manifestCl100k.toString().padLeft(4);
+      buffer.writeln(
+          '  ${_paint('Tokens', '2')}  '
+          'description (permanent)  $descGpt gpt-4   '
+          '~${tc.descriptionClaude} claude');
+      buffer.writeln(
+          '          '
+          'full manifest (active)   $maniGpt gpt-4   '
+          '~${tc.manifestClaude} claude');
+    }
+
     buffer.writeln();
     for (final cat in result.categories) {
       buffer.writeln('  ${cat.category}  ${cat.name.padRight(36)}'
