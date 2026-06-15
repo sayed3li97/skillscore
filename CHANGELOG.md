@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-14
+
+### Added
+
+- **BPE token counting:** every scorecard now shows the token cost of each
+  skill split into two scopes:
+  - `description (permanent)` — loaded on every prompt for skill discovery
+  - `full manifest (active)` — loaded only when the skill is invoked
+- Token counts use the **cl100k_base** BPE vocabulary (exact for GPT-4 and
+  Codex; Claude estimates add 10% overhead).
+- `--format json` output gains a `tokens` key with `gpt4` and
+  `claudeEstimate` values for both scopes, ready for dashboards and CI.
+- Validated against the official Anthropic `count_tokens` API across all
+  31 skills in `google/skills`: mean actual Claude overhead +10.2%,
+  median exactly +10.0%, range +0% to +20%.
+
 ## [0.2.0] - 2026-06-13
 
 ### Added
