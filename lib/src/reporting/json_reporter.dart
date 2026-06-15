@@ -44,7 +44,7 @@ class JsonReporter {
           'encoding': 'cl100k_base',
           'claudeNote':
               'Claude estimate applies +10% overhead to cl100k_base counts '
-              '(within ~5-8% of actual Anthropic API counts for English prose).',
+                  '(within ~5-8% of actual Anthropic API counts for English prose).',
           'description': {
             'scope': 'permanent: loaded on every prompt for skill discovery',
             'gpt4': tc.descriptionCl100k,

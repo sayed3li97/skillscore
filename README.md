@@ -43,6 +43,46 @@ three skills from [addyosmani/agent-skills](https://github.com/addyosmani/agent-
   <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/multipath-demo.gif" alt="Terminal recording: skillscore scores three agent-skills in one command (spec-driven-development 91/A, test-driven-development 88/B, performance-optimization 77/C), then a second command drills into performance-optimization showing the missing Safety section error and vague description warning" width="85%">
 </p>
 
+## Token budget
+
+Every scorecard now includes the BPE token cost of each skill, split by the two scopes in which agent runtimes load SKILL.md content:
+
+```text
+  Tokens  description (permanent)    67 gpt-4   ~74 claude
+          full manifest (active)   1474 gpt-4  ~1622 claude
+```
+
+**Permanent** is the per-prompt cost — the agent loads the `description` field on every call so it knows which skills exist. **Active** is the per-invocation cost, paid only when the agent decides to use the skill.
+
+The counts use the **cl100k_base** BPE vocabulary (exact for GPT-4 and Codex; Claude estimates add 10% overhead).
+
+Tested on all 31 skills from [google/skills](https://github.com/google/skills):
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/token-demo.gif" alt="Terminal recording: skillscore scans all 31 Google skills, then drills into the top scorer (95/A, 67-token description) and the lowest scorer (56/F, 142-token description), showing token counts alongside each scorecard" width="85%">
+</p>
+
+Description token counts across the Google skills repo ranged from **24 to 142** — a 6x spread. The 56/F `gke-basics` skill pays 142 tokens on every prompt just for discovery, while the 95/A `agent-platform-tuning-management` skill pays 67. Less tokens, better score, better skill.
+
+Token counts also appear in `--format json` under a `tokens` key, making them available to dashboards and CI pipelines.
+
+### API-validated accuracy
+
+The +10% Claude estimate was validated against the official **Anthropic `count_tokens` API** across all 31 Google skills:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/validate-demo.gif" alt="Terminal recording: skillscore estimate for gke-basics followed by the Anthropic count_tokens API validation across all 31 Google skills, showing mean overhead of +10.2% and median of +10.0%" width="85%">
+</p>
+
+| Metric | Value |
+|---|---|
+| Skills validated | 31 (all of google/skills) |
+| Mean actual Claude overhead vs cl100k | +10.2% |
+| Median | +10.0% |
+| Range | +0% to +20% (varies with keyword density) |
+
+The heuristic is accurate on average. Individual skills with dense trigger-keyword lists in their descriptions (like `gke-basics`) run toward +18-20%; clean prose descriptions run toward 0-6%.
+
 ## Editor integration
 
 Prefer to score inside your IDE? The **[Skillscore VS Code extension](https://github.com/sayed3li97/skillscore-vscode)** wraps this CLI and adds inline diagnostics, hover tooltips, a sidebar score panel, and a live status-bar indicator — available for VS Code, Antigravity IDE, VSCodium, and Cursor.
@@ -81,6 +121,9 @@ Sample output (trimmed):
 ```text
 csv-to-xlsx  (skills/spreadsheet-skill/SKILL.md)
   Score: 72/100  Grade: C
+
+  Tokens  description (permanent)    22 gpt-4   ~25 claude
+          full manifest (active)    185 gpt-4  ~204 claude
 
   A  Frontmatter validity                     15/15  ██████████
   B  Description quality                      12/25  █████░░░░░
