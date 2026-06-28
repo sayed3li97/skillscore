@@ -26,7 +26,9 @@ class BodyLengthRule extends BaseRule {
   @override
   String get fixHint =>
       'Move deep reference material into references/ or examples/ files and '
-      'link to them from the manifest.';
+      'link to them from the manifest. For bodies that are inherently long, '
+      'add a hierarchy layer with explicit navigation pointers, e.g. '
+      '"## Reference\\n> See references/api.md for the full parameter list."';
 
   /// Scoring: full 6 points at <=500 lines, degrading linearly to 0 at
   /// 1000 lines: `points = 6 * (1000 - lines) / 500`, clamped to 0..6.

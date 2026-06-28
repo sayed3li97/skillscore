@@ -238,6 +238,52 @@ class FrontloadedTriggersRule extends BaseRule {
   }
 }
 
+/// B6: the description's opening 250 characters are self-contained.
+/// Claude's auto-invocation context truncates descriptions at 250
+/// characters; content beyond that is invisible to the routing agent.
+/// Source: Anthropic. Active for claude and universal.
+class DescriptionTruncationRule extends BaseRule {
+  @override
+  String get id => 'B6_description_truncation';
+  @override
+  String get title => 'Description is self-contained within 250 characters';
+  @override
+  String get sourceGuide => 'Anthropic';
+  @override
+  int get maxPoints => 3;
+  @override
+  Set<Target> get targets => const {Target.claude, Target.universal};
+  @override
+  Severity get defaultSeverity => Severity.warning;
+  @override
+  String get rationale =>
+      "Claude's auto-invocation context truncates descriptions at 250 "
+      "characters. A description that passes A4's 1024-character limit can "
+      'still lose its trigger clause or action verb at the exact point where '
+      'the routing agent decides whether to invoke the skill.';
+  @override
+  String get fixHint =>
+      'Put the action verb and trigger clause entirely within the first '
+      '250 characters. Trim or restructure if needed — the opening window '
+      'is the only part the routing agent sees.';
+
+  static const int _limit = 250;
+
+  @override
+  RuleResult evaluate(SkillDocument doc, Target target) {
+    final description = doc.description;
+    if (description == null) return const RuleResult(points: 0);
+    if (description.length <= _limit) return pass();
+    return fail([
+      finding(
+        'Description is ${description.length} characters; Claude truncates '
+        'at $_limit. The trigger clause may be invisible to the routing agent.',
+        line: doc.descriptionLine,
+      ),
+    ]);
+  }
+}
+
 /// B5: the description includes a boundary / "do not use" clause to
 /// prevent over-activation. Source: Antigravity. Active for
 /// antigravity and universal.
