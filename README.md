@@ -275,42 +275,9 @@ filtered (`the`, `a`, `use`, `when`, `user`, `asks`, …), and suffix-stemmed
 
 The decision path for each query:
 
-```mermaid
-flowchart TD
-    A([query + skill description]) --> B{meta-query\npattern?}
-
-    B -- "'what is' · 'explain' · 'write test'\n'debug why' · 'summarise' · …" --> Z([p = 0.04])
-
-    B -- no --> C[extract clause terms]
-    C --> D[trigger terms\nfrom 'use when' clause\nscaffold words stripped]
-    C --> E[boundary terms\nfrom 'do not use' clause]
-    C --> F[what terms\nfrom first sentence]
-
-    D --> G["combined = trigger ∪ what"]
-    F --> G
-    E --> H["exclusive boundary\n= boundary − combined"]
-    G --> H
-
-    H --> I{exclusive boundary\nterm in query?}
-    I -- yes --> Z2([p = 0.05])
-    I -- no --> J["count: combined ∩ query terms"]
-
-    J --> K{match count}
-    K -- 0 --> L([p = 0.08])
-    K -- 1 --> M([p = 0.68])
-    K -- "≥ 2" --> N([p = 0.92])
-
-    L --> O["add wave noise ±7%\ndeterministic per call index"]
-    M --> O
-    N --> O
-
-    Z --> P{"p ≥ 0.5 ?"}
-    Z2 --> P
-    O --> P
-
-    P -- yes --> Q([triggered])
-    P -- no --> R([not triggered])
-```
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/feat/eval-harness/docs/assets/eval-algo.png" alt="Flowchart: the HeuristicEvalClient scoring algorithm — meta-query check, clause term extraction, boundary exclusivity filter, content-word match count, wave noise, and final threshold comparison" width="60%">
+</p>
 
 **Boundary exclusivity.** A boundary term only penalises a query when it does
 not also appear in the trigger or what context. This prevents shared nouns
