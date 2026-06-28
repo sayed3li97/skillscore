@@ -3,7 +3,12 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:path/path.dart' as p;
 
+import '../eval/eval_parser.dart';
+import '../eval/eval_reporter.dart';
+import '../eval/eval_runner.dart';
+import '../eval/eval_scaffolder.dart';
 import '../model/finding.dart';
 import '../parsing/skill_parser.dart';
 import '../reporting/json_reporter.dart';
@@ -92,6 +97,9 @@ Future<int> runCli(List<String> arguments,
     }
     return _explain(stdoutSink, stderrSink, registry, rest[1]);
   }
+  if (rest.first == 'eval') {
+    return _evalCommand(rest.sublist(1), args, stdoutSink, stderrSink);
+  }
 
   return _score(args, registry, stdoutSink, stderrSink);
 }
@@ -100,15 +108,18 @@ String _usage(ArgParser parser) => '''
 skillscore — lint and score AI agent skills (SKILL.md).
 
 Usage:
-  skillscore <path> [<path> ...]  Score one or more manifests, folders, or trees
-  skillscore rules                List every rule
-  skillscore explain <rule-id>    Explain one rule and its fix
+  skillscore <path> [<path> ...]       Score one or more manifests, folders, or trees
+  skillscore rules                     List every rule
+  skillscore explain <rule-id>         Explain one rule and its fix
+  skillscore eval init <path>          Scaffold evals.json next to SKILL.md
+  skillscore eval validate <path>      Validate an existing evals.json
+  skillscore eval run <path>           Run trigger-rate evals (offline, no API key)
   skillscore --version
 
 Options:
 ${parser.usage}
 
-Exit codes: 0 ok | 1 below --min-score or --strict findings | 2 usage error''';
+Exit codes: 0 ok | 1 below --min-score, --strict findings, or eval failures | 2 usage error''';
 
 void _printRules(StringSink out, RuleRegistry registry) {
   out.writeln('ID                            PTS  SEVERITY  TARGETS'
@@ -252,4 +263,195 @@ int _score(
             r.hasSeverity(Severity.error) || r.hasSeverity(Severity.warning));
   }
   return failed ? exitFailedGate : exitOk;
+}
+
+// ---------------------------------------------------------------------------
+// eval subcommand
+// ---------------------------------------------------------------------------
+
+Future<int> _evalCommand(
+  List<String> rest,
+  ArgResults globalArgs,
+  StringSink out,
+  StringSink err,
+) async {
+  if (rest.isEmpty) {
+    err.writeln('Error: "eval" needs a subcommand: init | validate | run');
+    err.writeln('       e.g. skillscore eval init my-skill/');
+    return exitUsage;
+  }
+  final sub = rest.first;
+  final subArgs = rest.sublist(1);
+  switch (sub) {
+    case 'init':
+      return _evalInit(subArgs, out, err);
+    case 'validate':
+      return _evalValidate(subArgs, out, err);
+    case 'run':
+      return _evalRun(subArgs, globalArgs, out, err);
+    default:
+      err.writeln('Error: unknown eval subcommand "$sub". '
+          'Valid subcommands: init | validate | run');
+      return exitUsage;
+  }
+}
+
+int _evalInit(List<String> args, StringSink out, StringSink err) {
+  if (args.isEmpty) {
+    err.writeln('Error: "eval init" needs a skill path, '
+        'e.g. skillscore eval init my-skill/');
+    return exitUsage;
+  }
+  final skillParser = SkillParser();
+  final warnings = <String>[];
+  List<String> manifests;
+  try {
+    manifests = skillParser.discoverManifests(args.first, warnings: warnings);
+  } on SkillInputException catch (e) {
+    err.writeln('Error: ${e.message}');
+    return exitUsage;
+  }
+  if (manifests.isEmpty) {
+    err.writeln(
+        'Error: no skill manifest (SKILL.md) found under: ${args.first}');
+    return exitUsage;
+  }
+  if (manifests.length > 1) {
+    err.writeln('Error: "eval init" expects a single skill directory; '
+        '${manifests.length} manifests found under ${args.first}');
+    return exitUsage;
+  }
+  for (final w in warnings) {
+    err.writeln('warning: $w');
+  }
+  final skill = skillParser.parseFile(manifests.first);
+  final evalsPath = p.join(skill.skillRoot, 'evals.json');
+  if (File(evalsPath).existsSync()) {
+    err.writeln('Error: $evalsPath already exists. '
+        'Delete it or edit it manually.');
+    return exitUsage;
+  }
+  final json = const EvalScaffolder().generate(skill);
+  File(evalsPath).writeAsStringSync('$json\n');
+  out.writeln('Created $evalsPath');
+  out.writeln(
+      '  ${const EvalScaffolder().scaffold(skill).queries.length} queries scaffolded '
+      '(edit before running to add project-specific queries)');
+  out.writeln('  Run: skillscore eval validate ${args.first}');
+  out.writeln('  Run: skillscore eval run ${args.first}');
+  return exitOk;
+}
+
+int _evalValidate(List<String> args, StringSink out, StringSink err) {
+  if (args.isEmpty) {
+    err.writeln('Error: "eval validate" needs a skill path, '
+        'e.g. skillscore eval validate my-skill/');
+    return exitUsage;
+  }
+  final skillParser = SkillParser();
+  List<String> manifests;
+  try {
+    manifests = skillParser.discoverManifests(args.first);
+  } on SkillInputException catch (e) {
+    err.writeln('Error: ${e.message}');
+    return exitUsage;
+  }
+  if (manifests.isEmpty) {
+    err.writeln(
+        'Error: no skill manifest (SKILL.md) found under: ${args.first}');
+    return exitUsage;
+  }
+  final skill = skillParser.parseFile(manifests.first);
+  final evalsPath = p.join(skill.skillRoot, 'evals.json');
+  final result = const EvalParser().parseFile(File(evalsPath));
+  if (!result.isValid) {
+    for (final e in result.errors) {
+      err.writeln('error: $e');
+    }
+    return exitUsage;
+  }
+  for (final w in result.warnings) {
+    err.writeln('warning: $w');
+  }
+  final doc = result.document!;
+  out.writeln('$evalsPath  OK');
+  out.writeln('  skill         ${doc.skillName}');
+  out.writeln('  queries       '
+      '${doc.triggerQueries.length} trigger + '
+      '${doc.nonTriggerQueries.length} non-trigger');
+  out.writeln('  runs/query    ${doc.runsPerQuery}');
+  out.writeln('  threshold     ${doc.triggerThreshold}');
+  out.writeln('  total checks  ${doc.queries.length * doc.runsPerQuery}');
+  return exitOk;
+}
+
+Future<int> _evalRun(
+  List<String> args,
+  ArgResults globalArgs,
+  StringSink out,
+  StringSink err,
+) async {
+  if (args.isEmpty) {
+    err.writeln('Error: "eval run" needs a skill path, '
+        'e.g. skillscore eval run my-skill/');
+    return exitUsage;
+  }
+  final noColor = globalArgs['no-color'] as bool;
+  final format = globalArgs['format'] as String;
+  final skillPath = args.first;
+
+  // Discover and parse the skill.
+  final skillParser = SkillParser();
+  List<String> manifests;
+  try {
+    manifests = skillParser.discoverManifests(skillPath);
+  } on SkillInputException catch (e) {
+    err.writeln('Error: ${e.message}');
+    return exitUsage;
+  }
+  if (manifests.isEmpty) {
+    err.writeln('Error: no skill manifest (SKILL.md) found under: $skillPath');
+    return exitUsage;
+  }
+  final skill = skillParser.parseFile(manifests.first);
+
+  // Parse evals.json.
+  final evalsPath = p.join(skill.skillRoot, 'evals.json');
+  final parseResult = const EvalParser().parseFile(File(evalsPath));
+  if (!parseResult.isValid) {
+    for (final e in parseResult.errors) {
+      err.writeln('error: $e');
+    }
+    return exitUsage;
+  }
+  for (final w in parseResult.warnings) {
+    err.writeln('warning: $w');
+  }
+  final document = parseResult.document!;
+
+  void progress(String msg) {
+    if (format != 'json') out.writeln(msg);
+  }
+
+  if (format != 'json') {
+    out.writeln('Running '
+        '${document.queries.length * document.runsPerQuery} checks '
+        '(${document.queries.length} queries × '
+        '${document.runsPerQuery} runs)…');
+    out.writeln();
+  }
+
+  final runner = EvalRunner(onProgress: progress);
+  final runResult = await runner.run(document, skill);
+
+  if (format != 'json') out.writeln();
+
+  switch (format) {
+    case 'json':
+      out.writeln(EvalReporter(color: false).reportJson(runResult));
+    default:
+      out.write(EvalReporter(color: !noColor).report(runResult));
+  }
+
+  return runResult.allPassed ? exitOk : exitFailedGate;
 }
