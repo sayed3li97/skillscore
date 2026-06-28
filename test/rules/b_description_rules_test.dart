@@ -130,4 +130,46 @@ void main() {
       expect(registry.effectiveSeverity(r, Target.universal), Severity.info);
     });
   });
+
+  group('B6_description_truncation', () {
+    final rule = DescriptionTruncationRule();
+    test('is active only for claude and universal', () {
+      expect(rule.targets, {Target.claude, Target.universal});
+    });
+    test('passes when description is exactly 250 characters', () {
+      final desc = 'A' * 250;
+      final result = evaluate(rule, manifestWith(description: desc));
+      expect(result.points, 3);
+      expect(result.findings, isEmpty);
+    });
+    test('passes when description is under 250 characters', () {
+      final result = evaluate(
+          rule,
+          manifestWith(
+              description:
+                  'Generates reports. Use when the user asks for a summary.'));
+      expect(result.points, 3);
+    });
+    test('fails when description exceeds 250 characters', () {
+      final desc = 'Generates detailed quarterly financial reports including '
+          'revenue, expenses, headcount, and margin breakdowns. '
+          'Use when the user asks for a quarterly summary, revenue analysis, '
+          'or financial breakdown by department or product line. '
+          'Do not use for real-time dashboards or live feeds.';
+      assert(desc.length > 250, 'test fixture must exceed 250 chars');
+      final result = evaluate(rule, manifestWith(description: desc));
+      expect(result.points, 0);
+      expect(result.findings, hasLength(1));
+      expect(result.findings.single.message, contains('250'));
+    });
+    test('awards 0 silently when description is missing', () {
+      final result = evaluate(rule, '---\nname: x\n---\n');
+      expect(result.points, 0);
+      expect(result.findings, isEmpty);
+    });
+    test('is not active for codex or antigravity', () {
+      expect(rule.targets.contains(Target.codex), isFalse);
+      expect(rule.targets.contains(Target.antigravity), isFalse);
+    });
+  });
 }

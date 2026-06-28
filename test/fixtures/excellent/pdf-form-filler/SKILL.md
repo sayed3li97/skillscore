@@ -4,7 +4,7 @@ description: >-
   Fills PDF form fields from structured JSON data and writes a flattened
   output file. Use when the user asks to fill, complete, or populate a PDF
   form programmatically. Do not use for scanned or image-only PDFs, and not
-  for creating new PDF layouts from scratch.
+  for creating new PDF layouts.
 ---
 
 # PDF form filler

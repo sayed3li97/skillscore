@@ -47,6 +47,7 @@ class RuleRegistry {
         ThirdPersonRule(),
         FrontloadedTriggersRule(),
         BoundaryClauseRule(),
+        DescriptionTruncationRule(),
         BodyLengthRule(),
         ExplainerBloatRule(),
         ExcessiveOptionalityRule(),

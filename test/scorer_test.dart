@@ -52,13 +52,14 @@ void main() {
       expect(codex.map((r) => r.id), isNot(contains('G1_safety_section')));
     });
 
-    test('universal positive rules total exactly 100 points', () {
+    test('universal positive rules total exactly 103 points', () {
+      // Update this value whenever a rule is added or its maxPoints changes.
       final registry = RuleRegistry();
       final total = registry
           .activeRules(Target.universal)
           .where((r) => r.maxPoints > 0)
           .fold<int>(0, (sum, r) => sum + r.maxPoints);
-      expect(total, 100);
+      expect(total, 103);
     });
   });
 
