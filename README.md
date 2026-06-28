@@ -141,9 +141,12 @@ csv-to-xlsx  (skills/spreadsheet-skill/SKILL.md)
 ## Commands and flags
 
 ```text
-skillscore <path> [<path> ...]   Score one or more manifests, folders, or trees
-skillscore rules                 List every rule: id, title, weight, targets, source guide
-skillscore explain <rule-id>     Print a rule's rationale, the fix, and its source guide
+skillscore <path> [<path> ...]        Score one or more manifests, folders, or trees
+skillscore rules                      List every rule: id, title, weight, targets, source guide
+skillscore explain <rule-id>          Print a rule's rationale, the fix, and its source guide
+skillscore eval init <path>           Scaffold evals.json from the skill's description
+skillscore eval validate <path>       Validate and summarise evals.json
+skillscore eval run <path>            Run the trigger-rate eval protocol against the API
 skillscore --version
 skillscore --help
 ```
@@ -204,6 +207,58 @@ ships scripts or terminal commands. Profiles that exclude a rule (e.g.
 
 Run `skillscore rules` for the live table and
 `skillscore explain <rule-id>` for any rule's rationale and fix.
+
+## Eval harness
+
+Static linting tells you a skill is well-formed. The eval harness tells you
+**whether the model actually routes to it** — the thing that matters in
+production. Three subcommands, one workflow:
+
+```bash
+# 1. Scaffold evals.json next to SKILL.md (runs offline, no API key needed)
+skillscore eval init my-skill/
+
+# 2. Review and optionally extend the generated queries
+cat my-skill/evals.json
+
+# 3. Run the eval against the Anthropic API
+ANTHROPIC_API_KEY=sk-ant-… skillscore eval run my-skill/
+```
+
+**`eval init`** reads the skill's description and derives 20 queries — 10
+trigger (the model should pick this skill) and 10 non-trigger (it should not).
+Every query is a real English sentence based on the skill's trigger clause and
+boundary clause; the file is runnable immediately while being easy to extend
+with project-specific queries.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-init.png" alt="Terminal: skillscore eval init pdf-form-filler/ — Created pdf-form-filler/evals.json, 20 queries scaffolded" width="85%">
+</p>
+
+**`eval validate`** parses `evals.json`, checks it has both trigger and
+non-trigger queries, and prints a structured summary of the test suite.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-validate.png" alt="Terminal: skillscore eval validate pdf-form-filler/ — shows skill name, 10 trigger + 10 non-trigger, model, threshold, 60 total API invocations" width="85%">
+</p>
+
+**`eval run`** fires 20 queries × 3 runs = 60 API calls (bounded at 5
+concurrent), streams live progress, then prints a per-query PASS/FAIL report.
+A trigger query passes when the model picks the skill in at least 50% of runs;
+a non-trigger query passes when it stays below 50%. FAILs on non-trigger
+queries tell you exactly which phrasings cause false positives — and which
+boundary clause to tighten.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-run.png" alt="Terminal: skillscore eval run pdf-form-filler/ — live progress, then per-query PASS/FAIL table, 13 passed 7 failed with failure details" width="85%">
+</p>
+
+**`--format json`** on `eval run` emits a machine-readable result for
+dashboards and CI pipelines.
+
+The API key is read from `ANTHROPIC_API_KEY` or `~/.config/anthropic/api_key`.
+The default model is `claude-haiku-4-5-20251001` to keep eval costs low
+(roughly $0.003 per 60-call run).
 
 ## How do I gate CI on skill quality?
 
