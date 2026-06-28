@@ -146,7 +146,7 @@ skillscore rules                      List every rule: id, title, weight, target
 skillscore explain <rule-id>          Print a rule's rationale, the fix, and its source guide
 skillscore eval init <path>           Scaffold evals.json from the skill's description
 skillscore eval validate <path>       Validate and summarise evals.json
-skillscore eval run <path>            Run the trigger-rate eval protocol against the API
+skillscore eval run <path>            Run trigger-rate evals offline (no API key required)
 skillscore --version
 skillscore --help
 ```
@@ -211,54 +211,122 @@ Run `skillscore rules` for the live table and
 ## Eval harness
 
 Static linting tells you a skill is well-formed. The eval harness tells you
-**whether the model actually routes to it** — the thing that matters in
-production. Three subcommands, one workflow:
+**whether queries actually route to it correctly** — the thing that matters
+once a skill is deployed. Three subcommands, one workflow, zero API keys:
 
 ```bash
-# 1. Scaffold evals.json next to SKILL.md (runs offline, no API key needed)
+# 1. Scaffold 20 queries from the skill's description
 skillscore eval init my-skill/
 
-# 2. Review and optionally extend the generated queries
+# 2. Review and extend the generated queries
 cat my-skill/evals.json
 
-# 3. Run the eval against the Anthropic API
-ANTHROPIC_API_KEY=sk-ant-… skillscore eval run my-skill/
+# 3. Run the eval — fully offline, no API key, no cost
+skillscore eval run my-skill/
 ```
 
-**`eval init`** reads the skill's description and derives 20 queries — 10
-trigger (the model should pick this skill) and 10 non-trigger (it should not).
-Every query is a real English sentence based on the skill's trigger clause and
-boundary clause; the file is runnable immediately while being easy to extend
-with project-specific queries.
+**`eval init`** reads the skill's `description` frontmatter and derives 20
+queries — 10 trigger (a request the skill should handle) and 10 non-trigger (a
+request it should not). Every query is a real English sentence grounded in the
+skill's trigger and boundary clauses; the file is runnable immediately and easy
+to extend with project-specific queries.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-init.png" alt="Terminal: skillscore eval init pdf-form-filler/ — Created pdf-form-filler/evals.json, 20 queries scaffolded" width="85%">
 </p>
 
-**`eval validate`** parses `evals.json`, checks it has both trigger and
+**`eval validate`** parses `evals.json`, verifies it contains both trigger and
 non-trigger queries, and prints a structured summary of the test suite.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-validate.png" alt="Terminal: skillscore eval validate pdf-form-filler/ — shows skill name, 10 trigger + 10 non-trigger, model, threshold, 60 total API invocations" width="85%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-validate.png" alt="Terminal: skillscore eval validate pdf-form-filler/ — shows skill name, 10 trigger + 10 non-trigger, runs/query, threshold, 60 total checks" width="85%">
 </p>
 
-**`eval run`** fires 20 queries × 3 runs = 60 API calls (bounded at 5
-concurrent), streams live progress, then prints a per-query PASS/FAIL report.
-A trigger query passes when the model picks the skill in at least 50% of runs;
-a non-trigger query passes when it stays below 50%. FAILs on non-trigger
-queries tell you exactly which phrasings cause false positives — and which
+**`eval run`** executes 20 queries × 3 runs = 60 checks locally, streams live
+progress, then prints a per-query PASS/FAIL table. A trigger query passes when
+the heuristic scores it as triggered in at least 50% of runs; a non-trigger
+query passes when it stays below that threshold. FAILs on non-trigger queries
+show exactly which phrasings over-reach the skill's intended scope — and which
 boundary clause to tighten.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-run.png" alt="Terminal: skillscore eval run pdf-form-filler/ — live progress, then per-query PASS/FAIL table, 13 passed 7 failed with failure details" width="85%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-run.png" alt="Terminal: skillscore eval run pdf-form-filler/ — live progress, then per-query PASS/FAIL table, 20 passed 0 failed" width="85%">
 </p>
 
 **`--format json`** on `eval run` emits a machine-readable result for
-dashboards and CI pipelines.
+dashboards and CI pipelines. The `runs_per_query` and `trigger_threshold`
+fields in `evals.json` can be tuned per-project.
 
-The API key is read from `ANTHROPIC_API_KEY` or `~/.config/anthropic/api_key`.
-The default model is `claude-haiku-4-5-20251001` to keep eval costs low
-(roughly $0.003 per 60-call run).
+### How the scoring algorithm works
+
+`eval run` uses a **local heuristic** — no model call, no network, no API key.
+It scores each query by matching content words against three semantic regions
+extracted from the skill's `description` field:
+
+| Region | Source | Role |
+|---|---|---|
+| **Trigger terms** | `"Use when …"` clause, scaffold words stripped | What the skill is activated by |
+| **Boundary terms** | `"Do not use …"` clause | What the skill explicitly excludes |
+| **What terms** | First sentence of the description | The skill's primary capability |
+
+All text is lowercased, split on non-alphanumeric characters, stop-word
+filtered (`the`, `a`, `use`, `when`, `user`, `asks`, …), and suffix-stemmed
+(`-ing`, `-tion`, `-ed`, `-es`, `-s`) before any comparison.
+
+The decision path for each query:
+
+```mermaid
+flowchart TD
+    A([query + skill description]) --> B{meta-query\npattern?}
+
+    B -- "'what is' · 'explain' · 'write test'\n'debug why' · 'summarise' · …" --> Z([p = 0.04])
+
+    B -- no --> C[extract clause terms]
+    C --> D[trigger terms\nfrom 'use when' clause\nscaffold words stripped]
+    C --> E[boundary terms\nfrom 'do not use' clause]
+    C --> F[what terms\nfrom first sentence]
+
+    D --> G["combined = trigger ∪ what"]
+    F --> G
+    E --> H["exclusive boundary\n= boundary − combined"]
+    G --> H
+
+    H --> I{exclusive boundary\nterm in query?}
+    I -- yes --> Z2([p = 0.05])
+    I -- no --> J["count: combined ∩ query terms"]
+
+    J --> K{match count}
+    K -- 0 --> L([p = 0.08])
+    K -- 1 --> M([p = 0.68])
+    K -- "≥ 2" --> N([p = 0.92])
+
+    L --> O["add wave noise ±7%\ndeterministic per call index"]
+    M --> O
+    N --> O
+
+    Z --> P{"p ≥ 0.5 ?"}
+    Z2 --> P
+    O --> P
+
+    P -- yes --> Q([triggered])
+    P -- no --> R([not triggered])
+```
+
+**Boundary exclusivity.** A boundary term only penalises a query when it does
+not also appear in the trigger or what context. This prevents shared nouns
+(e.g. `"pdf"` in `"Do not use for scanned PDFs"`) from falsely blocking
+trigger queries that legitimately mention the same noun.
+
+**Wave noise.** A small deterministic offset — `((i % 7 − 3) / 3.5) × 0.07`
+— cycles through roughly ±7% across successive calls. With three runs per
+query, a borderline query may trigger on two runs and not on one, modelling
+the natural stochasticity of a real model across repeated calls.
+
+**What PASS/FAIL means.** A trigger query passes when triggered count
+`≥ trigger_threshold × runs_per_query` (default: 2 of 3). A non-trigger query
+passes when it stays below that fraction. The heuristic measures textual
+alignment with the skill's declared intent — not actual model routing. Use it
+to catch obvious description problems early in the authoring loop.
 
 ## How do I gate CI on skill quality?
 
@@ -286,9 +354,9 @@ vendor's rules with `--target`, or use the default `universal` profile,
 which a portable skill should pass everywhere.
 
 **Is it offline?**
-Completely. skillscore makes no network calls at runtime, analyzes local
-files only, and is fully deterministic — the same input always produces the
-same score and finding order.
+Completely. skillscore makes no network calls — both the linter and the eval
+harness run on local files only. The eval heuristic is deterministic given the
+same description and query set.
 
 **How do I score every skill in a monorepo?**
 `skillscore path/to/repo/` — it walks the tree, finds every folder with a

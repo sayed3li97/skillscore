@@ -28,7 +28,6 @@ void main() {
       expect(doc.version, 1);
       expect(doc.runsPerQuery, defaultRunsPerQuery);
       expect(doc.triggerThreshold, defaultTriggerThreshold);
-      expect(doc.model, defaultEvalModel);
       expect(doc.queries, hasLength(2));
     });
 
@@ -39,7 +38,6 @@ void main() {
   "version": 1,
   "runs_per_query": 5,
   "trigger_threshold": 0.7,
-  "model": "claude-haiku-4-5-20251001",
   "queries": [
     {"id": "t01", "query": "Export CSV", "should_trigger": true},
     {"id": "n01", "query": "Import CSV", "should_trigger": false}
@@ -49,6 +47,20 @@ void main() {
       expect(doc.runsPerQuery, 5);
       expect(doc.triggerThreshold, 0.7);
       expect(doc.queries.first.id, 't01');
+    });
+
+    test('silently ignores legacy "model" field', () {
+      const json = '''
+{
+  "skill": "csv-exporter",
+  "model": "claude-haiku-4-5-20251001",
+  "queries": [
+    {"query": "Export CSV", "should_trigger": true},
+    {"query": "Import CSV", "should_trigger": false}
+  ]
+}''';
+      final result = parser.parse(json);
+      expect(result.isValid, isTrue);
     });
 
     test('triggerQueries and nonTriggerQueries partition correctly', () {
@@ -149,7 +161,6 @@ void main() {
   "version": 1,
   "runs_per_query": 3,
   "trigger_threshold": 0.5,
-  "model": "claude-haiku-4-5-20251001",
   "queries": [
     {"id": "t01", "query": "Fill form", "should_trigger": true},
     {"id": "n01", "query": "Read form", "should_trigger": false}

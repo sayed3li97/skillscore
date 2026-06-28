@@ -5,8 +5,6 @@ import 'package:test/test.dart';
 
 void main() {
   const client = HeuristicEvalClient();
-  const apiKey = '';
-  const model = 'offline';
 
   const desc = 'Fills PDF form fields from structured JSON data. '
       'Use when the user asks to fill or complete a PDF form. '
@@ -14,8 +12,6 @@ void main() {
 
   Future<bool> check(String query) async {
     final r = await client.checkTrigger(
-      apiKey: apiKey,
-      model: model,
       skillName: 'pdf-form-filler',
       skillDescription: desc,
       query: query,
@@ -62,16 +58,12 @@ void main() {
       for (var i = 0; i < 10; i++) {
         outcomes.add(await check(query));
       }
-      // Should not be all-identical over 10 calls (noise is present).
-      // Either all true or all false would be unusual but possible;
-      // we just verify no exception is thrown and results are booleans.
+      // Verify no exception is thrown and results are booleans.
       expect(outcomes, everyElement(isA<bool>()));
     });
 
     test('returns TriggerCheckResult with no error', () async {
       final result = await client.checkTrigger(
-        apiKey: apiKey,
-        model: model,
         skillName: 'test',
         skillDescription: desc,
         query: 'Fill a PDF form',

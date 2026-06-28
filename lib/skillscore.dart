@@ -14,15 +14,14 @@
 library;
 
 export 'src/cli/cli_runner.dart' show exitFailedGate, exitOk, exitUsage, runCli;
-export 'src/eval/eval_api_client.dart'
-    show EvalApiClient, AnthropicEvalClient, TriggerCheckResult;
+export 'src/eval/eval_api_client.dart' show EvalApiClient, TriggerCheckResult;
 export 'src/eval/eval_document.dart';
 export 'src/eval/eval_heuristic_client.dart' show HeuristicEvalClient;
 export 'src/eval/eval_parser.dart';
 export 'src/eval/eval_query.dart';
 export 'src/eval/eval_reporter.dart';
 export 'src/eval/eval_result.dart';
-export 'src/eval/eval_runner.dart' show EvalRunner, resolveApiKey;
+export 'src/eval/eval_runner.dart' show EvalRunner;
 export 'src/eval/eval_scaffolder.dart';
 export 'src/model/finding.dart';
 export 'src/model/skill_document.dart';

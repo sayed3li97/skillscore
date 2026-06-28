@@ -5,14 +5,11 @@ import 'eval_query.dart';
 /// The schema version this code understands.
 const int evalSchemaVersion = 1;
 
-/// Default number of API invocations per query.
+/// Default number of scoring runs per query.
 const int defaultRunsPerQuery = 3;
 
 /// Default fraction of runs that must trigger for a trigger query to pass.
 const double defaultTriggerThreshold = 0.5;
-
-/// Default model used for eval runs.
-const String defaultEvalModel = 'claude-haiku-4-5-20251001';
 
 /// Parsed representation of an `evals.json` file.
 ///
@@ -25,7 +22,6 @@ class EvalDocument {
     this.version = evalSchemaVersion,
     this.runsPerQuery = defaultRunsPerQuery,
     this.triggerThreshold = defaultTriggerThreshold,
-    this.model = defaultEvalModel,
     required this.queries,
   });
 
@@ -35,14 +31,11 @@ class EvalDocument {
   /// Schema version — currently always 1.
   final int version;
 
-  /// Number of API invocations per query (default: 3).
+  /// Number of scoring runs per query (default: 3).
   final int runsPerQuery;
 
   /// Minimum trigger rate for trigger queries to pass (default: 0.5).
   final double triggerThreshold;
-
-  /// Claude model used for eval runs.
-  final String model;
 
   /// All queries in document order.
   final List<EvalQuery> queries;
@@ -81,10 +74,7 @@ class EvalDocument {
       throw const FormatException(
           '"trigger_threshold" must be a number between 0.0 and 1.0');
     }
-    final model = json['model'] ?? defaultEvalModel;
-    if (model is! String || model.trim().isEmpty) {
-      throw const FormatException('"model" must be a non-empty string');
-    }
+    // "model" is silently ignored — eval runs are always offline.
     final rawQueries = json['queries'];
     if (rawQueries is! List || rawQueries.isEmpty) {
       throw const FormatException(
@@ -107,7 +97,6 @@ class EvalDocument {
       version: version,
       runsPerQuery: runsPerQuery,
       triggerThreshold: triggerThreshold,
-      model: model.trim(),
       queries: List.unmodifiable(queries),
     );
   }
@@ -118,7 +107,6 @@ class EvalDocument {
         'version': version,
         'runs_per_query': runsPerQuery,
         'trigger_threshold': triggerThreshold,
-        'model': model,
         'queries': queries.map((q) => q.toJson()).toList(),
       };
 }

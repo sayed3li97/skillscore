@@ -81,7 +81,7 @@ void main() {
       expect(out, contains('Failures'));
     });
 
-    test('shows model and runs/query in header', () {
+    test('shows runs/query in header', () {
       final out = const EvalReporter(color: false)
           .report(_makeResult(triggerFires: true));
       expect(out, contains('runs/query'));

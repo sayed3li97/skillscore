@@ -1,54 +1,35 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'dart:async';
-import 'dart:io';
 
 import '../model/skill_document.dart';
 import 'eval_api_client.dart';
 import 'eval_document.dart';
+import 'eval_heuristic_client.dart';
 import 'eval_query.dart';
 import 'eval_result.dart';
 
-/// Callback invoked after each API call to report live progress.
+/// Callback invoked after each check to report live progress.
 typedef ProgressCallback = void Function(String message);
-
-/// Resolves the Anthropic API key from the environment or config file.
-///
-/// Lookup order:
-/// 1. `ANTHROPIC_API_KEY` environment variable.
-/// 2. `~/.config/anthropic/api_key` file.
-String? resolveApiKey() {
-  final env = Platform.environment['ANTHROPIC_API_KEY'];
-  if (env != null && env.trim().isNotEmpty) return env.trim();
-
-  final home =
-      Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-  if (home != null) {
-    final f = File('$home/.config/anthropic/api_key');
-    if (f.existsSync()) {
-      final content = f.readAsStringSync().trim();
-      if (content.isNotEmpty) return content;
-    }
-  }
-  return null;
-}
 
 /// Runs the eval protocol and returns an [EvalRunResult].
 ///
-/// Each query in [document] is invoked [EvalDocument.runsPerQuery] times via
-/// [client]. Queries run concurrently up to [maxConcurrency] simultaneous API
-/// calls. Progress is reported via [onProgress].
+/// Each query in [document] is scored [EvalDocument.runsPerQuery] times via
+/// [client]. Checks run concurrently up to [maxConcurrency] at a time.
+/// Progress is reported via [onProgress].
 class EvalRunner {
-  /// Creates a runner with optional API client, concurrency, and progress hook.
+  /// Creates a runner with optional client, concurrency, and progress hook.
+  ///
+  /// Defaults to [HeuristicEvalClient] — fully offline, no API key required.
   const EvalRunner({
     EvalApiClient? client,
     this.maxConcurrency = 5,
     this.onProgress,
-  }) : _client = client ?? const AnthropicEvalClient();
+  }) : _client = client ?? const HeuristicEvalClient();
 
   final EvalApiClient _client;
 
-  /// Maximum number of simultaneous API calls.
+  /// Maximum number of simultaneous checks.
   final int maxConcurrency;
 
   /// Optional callback for live progress. Receives a line per invocation.
@@ -58,7 +39,6 @@ class EvalRunner {
   Future<EvalRunResult> run(
     EvalDocument document,
     SkillDocument skill,
-    String apiKey,
   ) async {
     final description = skill.description ?? '';
     final skillName = document.skillName;
@@ -72,7 +52,6 @@ class EvalRunner {
 
     // Run with bounded concurrency.
     final semaphore = _Semaphore(maxConcurrency);
-    // Store results as list-of-lists: [queryIndex][runIndex] = bool|null.
     final triggered = List.generate(
         queries.length, (_) => List<bool?>.filled(document.runsPerQuery, null));
     final errors = List.generate(queries.length, (_) => <String>[]);
@@ -82,8 +61,6 @@ class EvalRunner {
       await semaphore.acquire();
       try {
         final result = await _client.checkTrigger(
-          apiKey: apiKey,
-          model: document.model,
           skillName: skillName,
           skillDescription: description,
           query: queries[qi].query,

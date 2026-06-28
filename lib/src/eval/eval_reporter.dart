@@ -29,7 +29,6 @@ class EvalReporter {
     buf.write('${_b(color)}eval${_e(color)}  ');
     buf.writeln('${_b(color)}${doc.skillName}${_e(color)}  '
         '(${result.skillPath})');
-    buf.writeln('${_d(color)}  model         ${doc.model}${_e(color)}');
     buf.writeln('${_d(color)}  runs/query    ${doc.runsPerQuery}${_e(color)}');
     buf.writeln(
         '${_d(color)}  threshold     ${doc.triggerThreshold}${_e(color)}');
@@ -94,7 +93,6 @@ class EvalReporter {
       'tool': {'name': 'skillscore', 'subcommand': 'eval'},
       'skill': doc.skillName,
       'skillPath': result.skillPath,
-      'model': doc.model,
       'runsPerQuery': doc.runsPerQuery,
       'triggerThreshold': doc.triggerThreshold,
       'passed': result.allPassed,

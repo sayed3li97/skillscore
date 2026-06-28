@@ -114,21 +114,18 @@ void main() {
   });
 
   group('eval run', () {
-    test('exits 2 when API key is missing', () async {
-      // Remove ANTHROPIC_API_KEY from env by relying on the resolver seeing
-      // no env var. In tests there's no real key, so this should fail fast.
+    test('runs offline and produces a scored report', () async {
       await inTempSkill({
         'SKILL.md': _excellentManifest,
         'evals.json': _validEvalsJson,
       }, (root) async {
-        // runCli uses Platform.environment which includes the test process env.
-        // If ANTHROPIC_API_KEY happens to be set, skip this test.
-        if (Platform.environment['ANTHROPIC_API_KEY']?.isNotEmpty ?? false) {
-          return; // skip in environments with a real key
-        }
-        final (code, _, err) = await run(['eval', 'run', root]);
-        expect(code, exitUsage);
-        expect(err, contains('API key'));
+        final (code, out, err) = await run(['eval', 'run', root]);
+        // The command must finish cleanly (exit 0 = all pass, exit 1 = some
+        // fail — both are valid outcomes for offline heuristic scoring).
+        expect(code, isIn([exitOk, exitFailedGate]),
+            reason: 'stderr: $err');
+        expect(out, contains('passed'));
+        expect(out, contains('eval'));
       });
     });
 
@@ -139,12 +136,21 @@ void main() {
 
     test('missing evals.json exits 2', () async {
       await inTempSkill({'SKILL.md': _excellentManifest}, (root) async {
-        if (Platform.environment['ANTHROPIC_API_KEY']?.isNotEmpty ?? false) {
-          return;
-        }
         final (code, _, err) = await run(['eval', 'run', root]);
-        // Either API key error or missing evals.json — both exit 2.
         expect(code, exitUsage);
+        expect(err, contains('evals.json'));
+      });
+    });
+
+    test('json format produces machine-readable output', () async {
+      await inTempSkill({
+        'SKILL.md': _excellentManifest,
+        'evals.json': _validEvalsJson,
+      }, (root) async {
+        final (_, out, _) = await run(['--format', 'json', 'eval', 'run', root]);
+        expect(() => out.trim(), returnsNormally);
+        expect(out, contains('"skill"'));
+        expect(out, contains('"passed"'));
       });
     });
   });

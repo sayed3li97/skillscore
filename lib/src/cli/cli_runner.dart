@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
-import '../eval/eval_heuristic_client.dart';
 import '../eval/eval_parser.dart';
 import '../eval/eval_reporter.dart';
 import '../eval/eval_runner.dart';
@@ -55,9 +54,6 @@ Future<int> runCli(List<String> arguments,
     ..addFlag('quiet',
         negatable: false, help: 'Print only the final score line per skill.')
     ..addFlag('no-color', negatable: false, help: 'Disable ANSI colors.')
-    ..addFlag('offline',
-        negatable: false,
-        help: 'eval run only: use local heuristics instead of the API.')
     ..addFlag('version', negatable: false, help: 'Print the version.')
     ..addFlag('help',
         abbr: 'h', negatable: false, help: 'Print this usage information.');
@@ -117,7 +113,7 @@ Usage:
   skillscore explain <rule-id>         Explain one rule and its fix
   skillscore eval init <path>          Scaffold evals.json next to SKILL.md
   skillscore eval validate <path>      Validate an existing evals.json
-  skillscore eval run <path>           Run trigger-rate evals (add --offline for no API key)
+  skillscore eval run <path>           Run trigger-rate evals (offline, no API key)
   skillscore --version
 
 Options:
@@ -342,7 +338,7 @@ int _evalInit(List<String> args, StringSink out, StringSink err) {
       '  ${const EvalScaffolder().scaffold(skill).queries.length} queries scaffolded '
       '(edit before running to add project-specific queries)');
   out.writeln('  Run: skillscore eval validate ${args.first}');
-  out.writeln('  Run: ANTHROPIC_API_KEY=... skillscore eval run ${args.first}');
+  out.writeln('  Run: skillscore eval run ${args.first}');
   return exitOk;
 }
 
@@ -383,11 +379,9 @@ int _evalValidate(List<String> args, StringSink out, StringSink err) {
   out.writeln('  queries       '
       '${doc.triggerQueries.length} trigger + '
       '${doc.nonTriggerQueries.length} non-trigger');
-  out.writeln('  model         ${doc.model}');
   out.writeln('  runs/query    ${doc.runsPerQuery}');
   out.writeln('  threshold     ${doc.triggerThreshold}');
-  out.writeln('  total calls   '
-      '${doc.queries.length * doc.runsPerQuery} API invocations to run');
+  out.writeln('  total checks  ${doc.queries.length * doc.runsPerQuery}');
   return exitOk;
 }
 
@@ -404,23 +398,7 @@ Future<int> _evalRun(
   }
   final noColor = globalArgs['no-color'] as bool;
   final format = globalArgs['format'] as String;
-  final offline = globalArgs['offline'] as bool;
   final skillPath = args.first;
-
-  // Resolve API key unless running offline.
-  String? apiKey;
-  if (offline) {
-    apiKey = ''; // unused by HeuristicEvalClient
-  } else {
-    apiKey = resolveApiKey();
-    if (apiKey == null) {
-      err.writeln('Error: Anthropic API key not found.');
-      err.writeln('  Set ANTHROPIC_API_KEY, write it to '
-          '~/.config/anthropic/api_key,');
-      err.writeln('  or run with --offline for a free heuristic estimate.');
-      return exitUsage;
-    }
-  }
 
   // Discover and parse the skill.
   final skillParser = SkillParser();
@@ -451,32 +429,22 @@ Future<int> _evalRun(
   }
   final document = parseResult.document!;
 
-  // Run.
   void progress(String msg) {
     if (format != 'json') out.writeln(msg);
   }
 
   if (format != 'json') {
-    if (offline) {
-      out.writeln('  offline mode — heuristic term-overlap, no API call');
-      out.writeln();
-    }
-    out.writeln('Running ${document.queries.length * document.runsPerQuery} '
-        '${offline ? "checks" : "API calls"} '
+    out.writeln('Running '
+        '${document.queries.length * document.runsPerQuery} checks '
         '(${document.queries.length} queries × '
         '${document.runsPerQuery} runs)…');
     out.writeln();
   }
 
-  final client = offline
-      ? const HeuristicEvalClient()
-      : null; // null = AnthropicEvalClient default
-  final runner = EvalRunner(client: client, onProgress: progress);
-  final runResult = await runner.run(document, skill, apiKey);
+  final runner = EvalRunner(onProgress: progress);
+  final runResult = await runner.run(document, skill);
 
-  if (format != 'json') {
-    out.writeln();
-  }
+  if (format != 'json') out.writeln();
 
   switch (format) {
     case 'json':

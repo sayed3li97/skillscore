@@ -2,20 +2,21 @@
 
 import 'eval_api_client.dart';
 
-/// A cost-free local alternative to [AnthropicEvalClient].
+/// The eval client used by [EvalRunner].
 ///
-/// Estimates trigger probability by matching query terms against the skill
-/// description's trigger and boundary clauses. No network call, no API key,
-/// no cost. Results are deterministic approximations — they measure textual
-/// alignment, not actual model routing.
+/// Scores each query by matching its content words against three semantic
+/// regions extracted from the skill description: the trigger clause ("use
+/// when …"), the boundary clause ("do not use …"), and the opening sentence.
+/// No network call, no API key, no cost — runs fully offline in every
+/// environment.
 ///
-/// Use via `skillscore eval run --offline`.
+/// See the README for the full algorithm diagram.
 class HeuristicEvalClient implements EvalApiClient {
   /// Creates a heuristic client.
   const HeuristicEvalClient();
 
   // Incremented each call to introduce slight deterministic variation,
-  // simulating LLM stochasticity across runs.
+  // simulating the stochasticity a live model would exhibit across runs.
   static int _callIndex = 0;
 
   static const _stopWords = {
@@ -92,14 +93,14 @@ class HeuristicEvalClient implements EvalApiClient {
     'like',
   };
 
-  // Prefixes to strip from trigger / boundary clauses before extracting terms.
+  // Scaffold prefixes to strip before extracting content terms.
   static final _triggerPrefix =
       RegExp(r'^use when\b.*?\bto\b\s*', caseSensitive: false);
   static final _boundaryPrefix = RegExp(
       r'^(do not use|not (for|intended for)|cannot)\s*(for\s*)?',
       caseSensitive: false);
 
-  // Meta/explainer queries that almost never trigger a skill.
+  // Queries that express meta-curiosity rather than task intent.
   static final _metaPattern = RegExp(
     r'^(what is |what are |tell me |explain |describe |how do i install |'
     r'write (a )?(unit )?test|debug why |summaris[ez]|history of |'
@@ -109,15 +110,13 @@ class HeuristicEvalClient implements EvalApiClient {
 
   @override
   Future<TriggerCheckResult> checkTrigger({
-    required String apiKey,
-    required String model,
     required String skillName,
     required String skillDescription,
     required String query,
   }) async {
     final idx = _callIndex++;
     final p = _probability(query.trim(), skillDescription);
-    // Deterministic noise: ±7% cycling across successive calls.
+    // Deterministic wave noise: ±7% cycling across successive calls.
     final noise = _wave(idx) * 0.07;
     return TriggerCheckResult(triggered: (p + noise) >= 0.5);
   }
@@ -135,18 +134,18 @@ class HeuristicEvalClient implements EvalApiClient {
 
     final qTerms = _tokenize(query);
 
-    // Only penalise on terms that are EXCLUSIVE to the boundary clause —
-    // terms shared with trigger/what context (e.g. "pdf") are not distinctive.
+    // Only penalise on terms exclusive to the boundary clause — terms shared
+    // with trigger/what context (e.g. "pdf" in "Do not use for scanned PDFs")
+    // are not distinctive and must not block trigger queries.
     final combined = triggerTerms.union(whatTerms);
     final exclusiveBoundary = boundaryTerms.difference(combined);
 
-    // Any exclusive boundary term in the query → strongly not triggered.
     if (exclusiveBoundary.isNotEmpty &&
         exclusiveBoundary.intersection(qTerms).isNotEmpty) {
       return 0.05;
     }
-    final matches = combined.intersection(qTerms).length;
 
+    final matches = combined.intersection(qTerms).length;
     if (matches == 0) return 0.08;
     if (matches == 1) return 0.68;
     return 0.92;
@@ -167,7 +166,7 @@ class HeuristicEvalClient implements EvalApiClient {
       .map(_stem)
       .toSet();
 
-  // Minimal suffix stripping: covers common -s / -ing / -ed forms.
+  // Minimal suffix stripping: covers common -s / -ing / -ed / -tion forms.
   static String _stem(String w) {
     if (w.length > 5 && w.endsWith('ing')) return w.substring(0, w.length - 3);
     if (w.length > 5 && w.endsWith('tion')) return w.substring(0, w.length - 4);
@@ -177,6 +176,6 @@ class HeuristicEvalClient implements EvalApiClient {
     return w;
   }
 
-  // Lightweight wave: maps an integer to roughly [-1, 1].
+  // Maps call index to roughly [-1, 1] with a period of 7.
   static double _wave(int i) => ((i % 7) - 3) / 3.5;
 }

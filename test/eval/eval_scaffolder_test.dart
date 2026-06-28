@@ -93,7 +93,6 @@ void main() {
       final doc = scaffolder.scaffold(makeSkill());
       expect(doc.runsPerQuery, defaultRunsPerQuery);
       expect(doc.triggerThreshold, defaultTriggerThreshold);
-      expect(doc.model, defaultEvalModel);
     });
   });
 
