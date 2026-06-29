@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-29
+
+### Added
+
+- **Eval harness:** new `skillscore eval` command family for testing skill trigger accuracy without an API key.
+  - `eval init <path>` — scaffolds an `evals.json` file with 20 default queries derived from the skill description.
+  - `eval validate <path>` — parses and validates the eval suite; enforces trigger/non-trigger balance and minimum query count.
+  - `eval run <path>` — runs the full suite using the offline `HeuristicEvalClient`; exits 0 for pass, 1 for gate failure, 2 for usage errors.
+- **HeuristicEvalClient:** fully offline, deterministic trigger scorer.
+  - Extracts trigger terms (`use when` clause), boundary terms (`do not use` clause), and what-terms (first sentence) from the skill description.
+  - Boundary-exclusivity logic: only terms unique to the boundary clause penalize a query — shared nouns never cause false negatives.
+  - Meta-query pattern: `what is`, `explain`, `write a test for`, `summarise`, `debug why`, and similar explainer queries never trigger.
+  - Wave noise (±7%, deterministic per call index) adds realistic variance without randomness.
+- **B6 description truncation rule:** warns when the skill description field is too long for reliable discovery.
+- **C1 fix hint:** improved hierarchy pointer in the fix hint for conciseness rule C1.
+- `--format json` output for `eval run` includes `skill`, `passed`, `failed`, `queries`, and per-query results.
+- QA test suite (`tool/qa_run.mjs`): 20 test cases covering all three eval subcommands with PNG terminal screenshots in `docs/qa/evidence/`.
+
 ## [0.3.0] - 2026-06-14
 
 ### Added
