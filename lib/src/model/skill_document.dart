@@ -44,6 +44,7 @@ class SkillDocument {
     this.frontmatterError,
     this.nameLine,
     this.descriptionLine,
+    this.frontmatterKeyLines = const {},
     this.parseWarnings = const [],
   });
 
@@ -83,6 +84,10 @@ class SkillDocument {
 
   /// 1-based line of the `description:` key in the manifest, when present.
   final int? descriptionLine;
+
+  /// 1-based manifest line of every top-level frontmatter key, keyed by
+  /// the raw key string. Nested (indented) keys are not included.
+  final Map<String, int> frontmatterKeyLines;
 
   /// Files discovered under `references/`.
   final List<SideFile> references;

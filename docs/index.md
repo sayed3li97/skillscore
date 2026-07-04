@@ -17,7 +17,7 @@ Available as an **offline Dart CLI** for terminals and CI, and as a
 | **Antigravity IDE / VSCodium** | [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore) |
 
 skillscore reads a `SKILL.md` manifest (or a whole monorepo of them),
-applies 24 rules derived from the official skill-authoring guides, and
+applies 26 rules derived from the official skill-authoring guides, and
 produces a 0–100 score, a letter grade, and actionable findings with fix
 hints. Offline, deterministic, and built for CI gating.
 

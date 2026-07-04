@@ -96,4 +96,91 @@ void main() {
       expect(result.findings.single.message, contains('1024'));
     });
   });
+
+  group('A5_frontmatter_keys', () {
+    final rule = FrontmatterKeysRule();
+
+    test('passes when only recognized keys are present', () {
+      expect(evaluate(rule, manifestWith()).points, 2);
+    });
+
+    test('passes recognized optional keys', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'description: A skill. Use when asked.\n'
+          'license: MIT\n'
+          'allowed-tools: [Read, Write]\n'
+          'version: "1.0"\n'
+          'metadata:\n'
+          '  author: someone\n'
+          '---\n';
+      expect(evaluate(rule, manifest).points, 2);
+    });
+
+    test('does not flag nested keys under metadata', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'description: A skill. Use when asked.\n'
+          'metadata:\n'
+          '  custom-field: value\n'
+          '  another: 3\n'
+          '---\n';
+      expect(evaluate(rule, manifest).points, 2);
+    });
+
+    test('flags an unknown key', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'description: A skill. Use when asked.\n'
+          'author: someone\n'
+          '---\n';
+      final result = evaluate(rule, manifest);
+      expect(result.points, 0);
+      expect(result.findings.single.message, contains('author'));
+    });
+
+    test('suggests the closest key for a typo', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'descrption: A skill. Use when asked.\n'
+          '---\n';
+      final result = evaluate(rule, manifest);
+      expect(result.points, 0);
+      expect(result.findings.single.message, contains('Did you mean'));
+      expect(result.findings.single.message, contains('description'));
+    });
+
+    test('reports the line of the unknown key', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'description: A skill. Use when asked.\n'
+          'bogus: value\n'
+          '---\n';
+      final result = evaluate(rule, manifest);
+      expect(result.findings.single.line, 4);
+    });
+
+    test('reports every unknown key', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'description: A skill. Use when asked.\n'
+          'foo: 1\n'
+          'bar: 2\n'
+          '---\n';
+      final result = evaluate(rule, manifest);
+      expect(result.findings.length, 2);
+    });
+
+    test('stays silent when frontmatter is missing', () {
+      final result = evaluate(rule, '# no frontmatter');
+      expect(result.points, 0);
+      expect(result.findings, isEmpty);
+    });
+
+    test('defaults to WARNING severity', () {
+      final registry = RuleRegistry();
+      final r = registry.byId('A5_frontmatter_keys')!;
+      expect(registry.effectiveSeverity(r, Target.universal), Severity.warning);
+    });
+  });
 }

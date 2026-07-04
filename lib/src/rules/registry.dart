@@ -42,6 +42,7 @@ class RuleRegistry {
         NameFormatRule(),
         NameReservedWordsRule(),
         DescriptionPresentRule(),
+        FrontmatterKeysRule(),
         DescriptionWhatRule(),
         DescriptionWhenRule(),
         ThirdPersonRule(),
