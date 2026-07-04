@@ -209,6 +209,52 @@ ships scripts or terminal commands. Profiles that exclude a rule (e.g.
 Run `skillscore rules` for the live table and
 `skillscore explain <rule-id>` for any rule's rationale and fix.
 
+## Catching frontmatter typos (rule A5)
+
+The `SKILL.md` frontmatter is a fixed set of keys — `name`, `description`,
+`license`, `allowed-tools`, `metadata`, `version` — and YAML gives you no
+protection when you misspell one. Write `descrption:` and YAML happily
+accepts it as an unknown field while the real `description` goes *missing*.
+The skill still loads, but with empty metadata it is invocable only by name
+and is **never auto-triggered**. Strict validators, including Anthropic's own
+`skill-creator`, reject any unexpected key outright.
+
+Rule **`A5_frontmatter_keys`** catches this. It flags every top-level key
+outside the recognized set, and when the key is a near-miss for a real one
+(within an edit distance of two) it tells you which key you meant:
+
+```text
+$ skillscore my-skill/
+
+  ERROR   A4_description_present  line 1
+          Frontmatter has no non-empty "description" key.
+  WARNING A5_frontmatter_keys  line 3
+          Unknown frontmatter key "descrption". Did you mean "description"?
+```
+
+The two findings together tell the whole story: `A4` reports the field is
+gone, and `A5` points at the typo that swallowed it.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/qa/a5/evidence/A5-02.png" alt="skillscore scoring a skill whose description key is misspelled descrption: an A4 error reports the missing description and an A5 warning says Unknown frontmatter key descrption, did you mean description?" width="80%">
+</p>
+
+**Design details:**
+
+- **Custom fields are welcome — under `metadata`.** Only top-level keys are
+  checked, so anything nested inside a `metadata:` map is yours to name
+  freely and is never flagged.
+- **No false suggestions.** A genuinely unrecognized key such as `author`
+  is flagged without a misleading "did you mean", since it is not close to
+  any real key. (Move it under `metadata`.)
+- **No double-counting.** When the frontmatter is missing or malformed
+  entirely, `A5` stays silent and lets `A1` own that failure.
+- **Fully offline and deterministic**, like every other rule: the "did you
+  mean" suggestion is a local Levenshtein comparison, no network, no model.
+
+A full QA record for this rule — every case run against the compiled binary
+with screenshot evidence — lives in [`docs/qa/a5/`](docs/qa/a5/REPORT.md).
+
 ## Eval harness
 
 Static linting tells you a skill is well-formed. The eval harness tells you
