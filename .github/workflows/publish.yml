@@ -1,0 +1,27 @@
+name: Publish to pub.dev
+
+# Publishes the package to pub.dev using OIDC trusted publishing — no stored
+# credentials or tokens. The dart-lang reusable workflow performs the OIDC
+# handshake with pub.dev and runs `dart pub publish`.
+#
+# Two triggers:
+#   - workflow_dispatch: how release.yml kicks this off, dispatched against
+#     the v<version> TAG ref (see release.yml). This is the reliable path,
+#     because tags created by GITHUB_TOKEN do not fire the push listener.
+#   - push tags: a fallback for tags pushed by a human/PAT from a local
+#     machine. In the normal automated flow this does not fire.
+#
+# pub.dev must have trusted publishing enabled for this repo with tag
+# pattern v{{version}} (Admin → Automated publishing).
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    permissions:
+      id-token: write   # required for pub.dev OIDC — no secrets needed
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1

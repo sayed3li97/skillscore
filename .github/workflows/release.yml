@@ -1,36 +1,99 @@
 name: Release
 
+# Fires on every merge to main, but only acts when pubspec.yaml's version
+# has changed (i.e. no matching v<version> tag exists yet). On a new version
+# it creates the GitHub Release + tag, then explicitly dispatches publish.yml
+# against the *tag* ref so pub.dev's trusted publishing sees refType "tag".
+#
+# Why the explicit dispatch: tags created with GITHUB_TOKEN (via
+# `gh release create`) do NOT trigger other workflows' `push:` listeners
+# (GitHub's loop-prevention rule). workflow_dispatch is the exemption, so we
+# must kick publish.yml ourselves — and with --ref "<tag>", never a branch.
+#
+# Release flow: bump `version:` in pubspec.yaml + add a CHANGELOG section in
+# the same PR, merge to main, and this workflow does the rest.
+
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: write   # create releases and tags
+  actions: write    # dispatch publish.yml via workflow_dispatch
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dart-lang/setup-dart@v1
         with:
-          sdk: stable
-      - run: dart pub get
-      - run: dart analyze --fatal-infos
-      - run: dart test
-      - name: Extract changelog notes for this version
+          fetch-depth: 0   # full history so tag lookups are reliable
+
+      - name: Read version from pubspec.yaml
+        id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/^version:[[:space:]]*//' | tr -d '[:space:]')
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not read version from pubspec.yaml"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $VERSION (tag v$VERSION)"
+
+      - name: Check whether the tag already exists
+        id: check
+        run: |
+          git fetch --tags --quiet || true
+          if git rev-parse "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${{ steps.version.outputs.tag }} already exists — nothing to release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${{ steps.version.outputs.tag }} is new — releasing."
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Capture the block from the heading that mentions this version
+          # (matches both "## [0.7.0] - date" and "## 0.7.0") up to the next
+          # "## " heading. Dots in the version are escaped so they match
+          # literally rather than as regex wildcards.
           awk -v ver="$VERSION" '
-            $0 ~ "^## \\[" ver "\\]" {flag=1; next}
-            /^## \[/ {flag=0}
-            flag' CHANGELOG.md > release-notes.md
-          cat release-notes.md
-      - name: Create GitHub Release
+            BEGIN { gsub(/\./, "\\.", ver) }
+            $0 ~ "^## .*" ver { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          # Trim leading blank lines; fall back to a stub if empty.
+          sed -i -e '/./,$!d' RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Release $VERSION" > RELEASE_NOTES.md
+          fi
+          echo "----- release notes -----"
+          cat RELEASE_NOTES.md
+          echo "-------------------------"
+
+      - name: Create GitHub Release and tag
+        if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "skillscore ${GITHUB_REF_NAME#v}" \
-            --notes-file release-notes.md
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --notes-file RELEASE_NOTES.md \
+            --target "${{ github.sha }}"
+
+      - name: Trigger pub.dev publish workflow
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # CRITICAL: dispatch against the TAG, never a branch. pub.dev's
+          # trusted-publishing OIDC config only accepts tokens whose ref has
+          # refType "tag" matching the configured pattern; a branch ref is
+          # rejected ("publishing is only allowed from 'tag' refType").
+          gh workflow run publish.yml --ref "${{ steps.version.outputs.tag }}"
+          echo "Dispatched publish.yml against ${{ steps.version.outputs.tag }}"
