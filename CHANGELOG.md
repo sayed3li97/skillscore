@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-07-04
+
+### Added
+
+- **Rule A5 (`A5_frontmatter_keys`):** flags any top-level `SKILL.md`
+  frontmatter key outside the recognized set (`name`, `description`,
+  `license`, `allowed-tools`, `metadata`, `version`). A misspelled key is
+  invisible to YAML — `descrption:` silently drops the description while
+  adding an unknown field — and strict validators such as Anthropic's
+  `skill-creator` reject any unexpected key outright.
+- When an unknown key is within edit distance two of a recognized key, the
+  finding appends a "did you mean" suggestion (offline Levenshtein), so a
+  typo like `descrption` points straight at `description`. Custom fields
+  belong under the `metadata` map, which is never flagged (only top-level
+  keys are checked).
+- Parser now records the manifest line of every top-level frontmatter key,
+  so A5 findings point at the offending key.
+- README gains a "Catching frontmatter typos" section, and a full QA record
+  with screenshot evidence lives in `docs/qa/a5/`.
+
+### Note
+
+- Version 0.7.0 was skipped: a tag was created in error by tooling and never
+  published. This release supersedes it.
+
 ## [0.6.0] - 2026-06-29
 
 ### Added
