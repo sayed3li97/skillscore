@@ -125,7 +125,7 @@ csv-to-xlsx  (skills/spreadsheet-skill/SKILL.md)
   Tokens  description (permanent)    22 gpt-4   ~25 claude
           full manifest (active)    185 gpt-4  ~204 claude
 
-  A  Frontmatter validity                     15/15  ██████████
+  A  Frontmatter validity                     17/17  ██████████
   B  Description quality                      12/25  █████░░░░░
   C  Conciseness & token economy            10.5/15  ███████░░░
   D  Structure & progressive disclosure       15/15  ██████████
@@ -184,6 +184,7 @@ ships scripts or terminal commands. Profiles that exclude a rule (e.g.
 | `A2_name_format` | `name` ≤64 chars, lowercase/digits/hyphens | 4 | error | all | Anthropic |
 | `A3_name_reserved_words` | `name` avoids "anthropic"/"claude" | 3 | error (claude) / info | all | Anthropic |
 | `A4_description_present` | `description` present, ≤1024 chars | 4 | error | all | Anthropic |
+| `A5_frontmatter_keys` | Only recognized keys, no typos ("did you mean") | 2 | warning | all | Anthropic |
 | `B1_description_what` | States WHAT (opens with action verb) | 6 | warning | all | Anthropic |
 | `B2_description_when` | States WHEN ("use when ...") | 6 | warning | all | Anthropic |
 | `B3_third_person` | Written in third person | 5 | warning | all | Anthropic |

@@ -195,3 +195,110 @@ class DescriptionPresentRule extends BaseRule {
     return pass();
   }
 }
+
+/// A5: every top-level frontmatter key is one the skill format recognizes.
+/// A typo like `descrption:` silently drops the field, and strict
+/// validators (e.g. Anthropic's) reject the manifest outright. Source:
+/// Anthropic (skill-creator `quick_validate.py` whitelists the keys).
+class FrontmatterKeysRule extends BaseRule {
+  @override
+  String get id => 'A5_frontmatter_keys';
+  @override
+  String get title => 'frontmatter has only recognized keys (no typos)';
+  @override
+  String get sourceGuide => 'Anthropic';
+  @override
+  int get maxPoints => 2;
+  @override
+  Set<Target> get targets => Target.values.toSet();
+  @override
+  Severity get defaultSeverity => Severity.warning;
+  @override
+  String get rationale =>
+      'The frontmatter schema is a fixed set of keys. A misspelled key such '
+      'as "descrption" is not an error to YAML — it silently becomes an '
+      'unknown field while the real "description" goes missing, and strict '
+      "validators (like Anthropic's skill-creator) reject any unexpected "
+      'key. Put custom fields under "metadata" instead.';
+  @override
+  String get fixHint =>
+      'Fix the misspelled key, remove it, or move custom fields under a '
+      '"metadata:" map. Recognized keys: name, description, license, '
+      'allowed-tools, metadata, version.';
+
+  /// Top-level keys the SKILL.md frontmatter format recognizes. Custom
+  /// data belongs under `metadata`, which is the sanctioned escape hatch.
+  static const Set<String> knownKeys = {
+    'name',
+    'description',
+    'license',
+    'allowed-tools',
+    'metadata',
+    'version',
+  };
+
+  @override
+  RuleResult evaluate(SkillDocument doc, Target target) {
+    // A1 already reports missing/malformed frontmatter; stay silent here
+    // so the same problem is not double-counted.
+    if (!doc.frontmatterValid) return const RuleResult(points: 0);
+
+    final unknown =
+        doc.frontmatter.keys.where((k) => !knownKeys.contains(k)).toList();
+    if (unknown.isEmpty) return pass();
+
+    return fail([
+      for (final key in unknown)
+        finding(
+          _messageFor(key),
+          line: doc.frontmatterKeyLines[key] ?? doc.nameLine ?? 1,
+        ),
+    ]);
+  }
+
+  String _messageFor(String key) {
+    final suggestion = _closestKnownKey(key);
+    final base = 'Unknown frontmatter key "$key".';
+    return suggestion == null ? base : '$base Did you mean "$suggestion"?';
+  }
+
+  /// The recognized key closest to [key] within edit distance 2, or null.
+  static String? _closestKnownKey(String key) {
+    String? best;
+    var bestDistance = 3;
+    for (final known in knownKeys) {
+      final d = _levenshtein(key.toLowerCase(), known);
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = known;
+      }
+    }
+    return best;
+  }
+}
+
+/// Classic Levenshtein edit distance between [a] and [b].
+int _levenshtein(String a, String b) {
+  if (a == b) return 0;
+  if (a.isEmpty) return b.length;
+  if (b.isEmpty) return a.length;
+
+  var previous = List<int>.generate(b.length + 1, (i) => i);
+  var current = List<int>.filled(b.length + 1, 0);
+
+  for (var i = 0; i < a.length; i++) {
+    current[0] = i + 1;
+    for (var j = 0; j < b.length; j++) {
+      final cost = a.codeUnitAt(i) == b.codeUnitAt(j) ? 0 : 1;
+      current[j + 1] = [
+        current[j] + 1, // insertion
+        previous[j + 1] + 1, // deletion
+        previous[j] + cost, // substitution
+      ].reduce((x, y) => x < y ? x : y);
+    }
+    final swap = previous;
+    previous = current;
+    current = swap;
+  }
+  return previous[b.length];
+}

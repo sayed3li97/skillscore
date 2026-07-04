@@ -128,6 +128,7 @@ class SkillParser {
     var bodyStartLine = 1;
     int? nameLine;
     int? descriptionLine;
+    final keyLines = <String, int>{};
 
     if (lines.isNotEmpty && lines.first.trim() == '---') {
       var close = -1;
@@ -157,6 +158,7 @@ class SkillParser {
           error = 'Malformed YAML frontmatter: ${e.message}';
         }
         bodyStartLine = close + 2;
+        final keyPattern = RegExp(r'^([A-Za-z0-9_-]+)\s*:');
         for (var i = 1; i < close; i++) {
           final line = lines[i];
           if (nameLine == null && RegExp(r'^name\s*:').hasMatch(line)) {
@@ -165,6 +167,12 @@ class SkillParser {
           if (descriptionLine == null &&
               RegExp(r'^description\s*:').hasMatch(line)) {
             descriptionLine = i + 1;
+          }
+          // Record the first line of each top-level key (column 0, so
+          // nested/indented keys under maps like `metadata:` are ignored).
+          final match = keyPattern.firstMatch(line);
+          if (match != null) {
+            keyLines.putIfAbsent(match.group(1)!, () => i + 1);
           }
         }
       } else {
@@ -194,6 +202,7 @@ class SkillParser {
       bodyStartLine: hasDelimiters ? bodyStartLine : 1,
       nameLine: nameLine,
       descriptionLine: descriptionLine,
+      frontmatterKeyLines: keyLines,
       references: _readSideFolder(skillRoot, 'references', warnings),
       examples: _readSideFolder(skillRoot, 'examples', warnings),
       scripts: _readSideFolder(skillRoot, 'scripts', warnings),

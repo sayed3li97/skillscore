@@ -122,8 +122,7 @@ void main() {
         final (code, out, err) = await run(['eval', 'run', root]);
         // The command must finish cleanly (exit 0 = all pass, exit 1 = some
         // fail — both are valid outcomes for offline heuristic scoring).
-        expect(code, isIn([exitOk, exitFailedGate]),
-            reason: 'stderr: $err');
+        expect(code, isIn([exitOk, exitFailedGate]), reason: 'stderr: $err');
         expect(out, contains('passed'));
         expect(out, contains('eval'));
       });
@@ -147,7 +146,8 @@ void main() {
         'SKILL.md': _excellentManifest,
         'evals.json': _validEvalsJson,
       }, (root) async {
-        final (_, out, _) = await run(['--format', 'json', 'eval', 'run', root]);
+        final (_, out, _) =
+            await run(['--format', 'json', 'eval', 'run', root]);
         expect(() => out.trim(), returnsNormally);
         expect(out, contains('"skill"'));
         expect(out, contains('"passed"'));
