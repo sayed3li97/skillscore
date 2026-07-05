@@ -1,0 +1,80 @@
+<svg viewBox="0 0 1160 470" xmlns="http://www.w3.org/2000/svg" font-family="'SFMono-Regular','SF Mono','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace">
+  <defs>
+    <style>
+      .card { fill:#0d1117; stroke:#1b2029; }
+      .node { fill:#12171f; stroke:#2a323d; stroke-width:1.5; }
+      .accent{ fill:#0f1a2b; stroke:#4d9fff; stroke-width:1.5; }
+      .zone { fill:#59626f; font-size:13px; letter-spacing:.22em; }
+      .subh { fill:#7d8795; font-size:15px; }
+      .step { fill:#e6edf3; font-size:22px; }
+      .sub  { fill:#8b95a3; font-size:14px; }
+      .num  { fill:#59626f; font-size:13px; }
+      .base { stroke:#2f3845; stroke-width:1.6; fill:none; }
+      .dot  { fill:#9cc9ff; animation:travel 1.6s cubic-bezier(.45,0,.25,1) infinite; }
+      .halo { fill:#4d9fff; opacity:.22; animation:travel 1.6s cubic-bezier(.45,0,.25,1) infinite; }
+      .pill { fill:#0f1a2b; stroke:#2f5c9e; stroke-width:1.2; }
+      .pillt{ fill:#4d9fff; font-size:13px; letter-spacing:.12em; }
+      .cap  { fill:#59626f; font-size:14px; }
+      .capA { fill:#4d9fff; font-size:14px; }
+      .g    { animation:rise .55s cubic-bezier(.2,.7,.2,1) both; }
+      .fl   { animation:fade .5s ease both; }
+      .d1{animation-delay:.10s}.d2{animation-delay:.34s}.d3{animation-delay:.58s}.d4{animation-delay:.82s}
+      .fd1{animation-delay:.28s}.fd2{animation-delay:.52s}
+      @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes fade{from{opacity:0}to{opacity:1}}
+      @keyframes travel{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(47px);opacity:0}}
+    </style>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6" fill="none" stroke="#4a5462" stroke-width="1.3"/>
+    </marker>
+  </defs>
+
+  <rect class="card" x="8" y="8" width="1144" height="454" rx="18"/>
+  <text class="zone" x="44" y="52">EVAL HARNESS</text>
+  <text class="subh" x="44" y="76">does a query actually route to your skill? measure it, on-device</text>
+
+  <!-- offline pill (top-right) -->
+  <g class="fl fd1">
+    <rect class="pill" x="908" y="38" width="204" height="30" rx="15"/>
+    <text class="pillt" x="1010" y="58" text-anchor="middle">OFFLINE &#183; NO API KEY</text>
+  </g>
+
+  <!-- connectors -->
+  <g class="fl fd1">
+    <path class="base" d="M350 255 H405" marker-end="url(#arr)"/>
+    <circle class="halo" cx="356" cy="255" r="6"/><circle class="dot" cx="356" cy="255" r="3.4"/>
+  </g>
+  <g class="fl fd2">
+    <path class="base" d="M685 255 H740" marker-end="url(#arr)"/>
+    <circle class="halo" cx="691" cy="255" r="6"/><circle class="dot" cx="691" cy="255" r="3.4"/>
+  </g>
+
+  <!-- 1. init -->
+  <g class="g d1">
+    <rect class="node" x="70" y="198" width="280" height="116" rx="12"/>
+    <text class="num"  x="94" y="228">1</text>
+    <text class="step" x="210" y="248" text-anchor="middle">eval init</text>
+    <text class="sub"  x="210" y="276" text-anchor="middle">scaffold 20 queries</text>
+    <text class="sub"  x="210" y="296" text-anchor="middle" fill="#59626f">10 should-trigger &#183; 10 should-not</text>
+  </g>
+
+  <!-- 2. validate -->
+  <g class="g d2">
+    <rect class="node" x="405" y="198" width="280" height="116" rx="12"/>
+    <text class="num"  x="429" y="228">2</text>
+    <text class="step" x="545" y="248" text-anchor="middle">eval validate</text>
+    <text class="sub"  x="545" y="276" text-anchor="middle">check balance &amp; thresholds</text>
+    <text class="sub"  x="545" y="296" text-anchor="middle" fill="#59626f">both classes present, sane counts</text>
+  </g>
+
+  <!-- 3. run (accent) -->
+  <g class="g d3">
+    <rect class="accent" x="740" y="198" width="280" height="116" rx="12"/>
+    <text class="num"  x="764" y="228" fill="#4d9fff">3</text>
+    <text class="step" x="880" y="248" text-anchor="middle" fill="#cfe4ff">eval run</text>
+    <text class="sub"  x="880" y="276" text-anchor="middle">3 runs per query</text>
+    <text class="sub"  x="880" y="296" text-anchor="middle" fill="#4d9fff">pass if trigger-rate &#8805; 0.5</text>
+  </g>
+
+  <text class="cap" x="44" y="422">Queries are generated from your <tspan class="capA">description</tspan>, then scored by a deterministic term-overlap heuristic. No model, no cost.</text>
+</svg>

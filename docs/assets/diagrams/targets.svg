@@ -1,0 +1,74 @@
+<svg viewBox="0 0 1160 520" xmlns="http://www.w3.org/2000/svg" font-family="'SFMono-Regular','SF Mono','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace">
+  <defs>
+    <style>
+      .card { fill:#0d1117; stroke:#1b2029; }
+      .node { fill:#12171f; stroke:#2a323d; stroke-width:1.5; }
+      .accent{ fill:#0f1a2b; stroke:#4d9fff; stroke-width:1.5; }
+      .zone { fill:#59626f; font-size:13px; letter-spacing:.22em; }
+      .subh { fill:#7d8795; font-size:15px; }
+      .lbl  { fill:#e6edf3; font-size:20px; }
+      .tname{ fill:#e6edf3; font-size:19px; }
+      .sub  { fill:#8b95a3; font-size:14px; }
+      .note { fill:#59626f; font-size:13px; }
+      .wire { stroke:#2f3845; stroke-width:1.6; fill:none;
+              stroke-dasharray:760; stroke-dashoffset:0; animation:draw 1s ease both; }
+      .wireA{ stroke:#325a8c; }
+      .cap  { fill:#59626f; font-size:14px; }
+      .capA { fill:#4d9fff; font-size:14px; }
+      .g    { animation:rise .55s cubic-bezier(.2,.7,.2,1) both; }
+      @keyframes draw{from{stroke-dashoffset:760}to{stroke-dashoffset:0}}
+      @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+      .w1{animation-delay:.30s}.w2{animation-delay:.42s}.w3{animation-delay:.54s}.w4{animation-delay:.66s}
+      .d0{animation-delay:.08s}
+      .t1{animation-delay:.60s}.t2{animation-delay:.72s}.t3{animation-delay:.84s}.t4{animation-delay:.96s}
+    </style>
+  </defs>
+
+  <rect class="card" x="8" y="8" width="1144" height="504" rx="18"/>
+  <text class="zone" x="44" y="52">TARGETS</text>
+  <text class="subh" x="44" y="76">one manifest, four authoring guides:  pick a lens with --target</text>
+
+  <!-- fan wires (behind nodes) -->
+  <path class="wire w1"  d="M300 285 H520 V132 H700"/>
+  <path class="wire w2"  d="M300 285 H520 V226 H700"/>
+  <path class="wire w3"  d="M300 285 H520 V320 H700"/>
+  <path class="wire wireA w4" d="M300 285 H520 V414 H700"/>
+
+  <!-- source -->
+  <g class="g d0">
+    <rect class="node" x="60" y="240" width="240" height="92" rx="12"/>
+    <text class="lbl" x="180" y="282" text-anchor="middle">SKILL.md</text>
+    <text class="sub" x="180" y="306" text-anchor="middle">one file</text>
+  </g>
+
+  <!-- claude -->
+  <g class="g t1">
+    <rect class="node" x="700" y="98" width="380" height="72" rx="11"/>
+    <text class="tname" x="726" y="132">claude</text>
+    <text class="sub"   x="726" y="154">Anthropic &#183; Claude Code</text>
+    <text class="note"  x="1058" y="140" text-anchor="end">adds B6</text>
+  </g>
+  <!-- antigravity -->
+  <g class="g t2">
+    <rect class="node" x="700" y="192" width="380" height="72" rx="11"/>
+    <text class="tname" x="726" y="226">antigravity</text>
+    <text class="sub"   x="726" y="248">Google Antigravity</text>
+    <text class="note"  x="1058" y="234" text-anchor="end">adds B5, G1</text>
+  </g>
+  <!-- codex -->
+  <g class="g t3">
+    <rect class="node" x="700" y="286" width="380" height="72" rx="11"/>
+    <text class="tname" x="726" y="320">codex</text>
+    <text class="sub"   x="726" y="342">OpenAI Codex</text>
+    <text class="note"  x="1058" y="328" text-anchor="end">adds B4</text>
+  </g>
+  <!-- universal (accent, default) -->
+  <g class="g t4">
+    <rect class="accent" x="700" y="380" width="380" height="72" rx="11"/>
+    <text class="tname" x="726" y="414" fill="#cfe4ff">universal</text>
+    <text class="sub"   x="726" y="436" fill="#8fb6e6">every guide &#183; portable</text>
+    <text class="note"  x="1058" y="422" text-anchor="end" fill="#4d9fff">default</text>
+  </g>
+
+  <text class="cap" x="44" y="486">A skill that passes <tspan class="capA">universal</tspan> is portable across all four runtimes.  Each rule stays tagged with the guide it came from.</text>
+</svg>

@@ -1,0 +1,98 @@
+<svg viewBox="0 0 1160 470" xmlns="http://www.w3.org/2000/svg" font-family="'SFMono-Regular','SF Mono','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace">
+  <defs>
+    <style>
+      .card   { fill:#0d1117; stroke:#1b2029; }
+      .node   { fill:#12171f; stroke:#2a323d; stroke-width:1.5; }
+      .accent { fill:#0f1a2b; stroke:#4d9fff; stroke-width:1.5; }
+      .lbl    { fill:#e6edf3; font-size:20px; }
+      .sub    { fill:#7d8795; font-size:13px; }
+      .zone   { fill:#59626f; font-size:13px; letter-spacing:.22em; }
+      .cap    { fill:#59626f; font-size:14px; }
+      .capA   { fill:#4d9fff; font-size:14px; }
+      .base   { stroke:#2f3845; stroke-width:1.6; fill:none; }
+      .dot    { fill:#9cc9ff; animation:travel 1.6s cubic-bezier(.45,0,.25,1) infinite; }
+      .halo   { fill:#4d9fff; opacity:.22; animation:travel 1.6s cubic-bezier(.45,0,.25,1) infinite; }
+      .g      { animation:rise .55s cubic-bezier(.2,.7,.2,1) both; }
+      .d1{animation-delay:.10s}.d2{animation-delay:.32s}.d3{animation-delay:.54s}
+      .d4{animation-delay:.76s}.d5{animation-delay:.98s}.d6{animation-delay:1.2s}
+      .fl{animation:fade .5s ease both}
+      .fd1{animation-delay:.30s}.fd2{animation-delay:.52s}.fd3{animation-delay:.74s}.fd4{animation-delay:.96s}
+      .pulse{animation:glow 3.2s ease-in-out infinite}
+      @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes fade{from{opacity:0}to{opacity:1}}
+      @keyframes travel{0%{transform:translateX(0);opacity:0}18%{opacity:1}82%{opacity:1}100%{transform:translateX(52px);opacity:0}}
+      @keyframes glow{0%,100%{stroke:#4d9fff}50%{stroke:#8cc2ff}}
+    </style>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6" fill="none" stroke="#4a5462" stroke-width="1.3"/>
+    </marker>
+  </defs>
+
+  <rect class="card" x="8" y="8" width="1144" height="454" rx="18"/>
+
+  <!-- header -->
+  <text class="zone" x="44" y="52">PIPELINE</text>
+  <text class="sub" x="44" y="76" font-size="15">how a skill manifest becomes a 0-100 score</text>
+
+  <!-- connectors (solid = on-device); traveling dots show data flow -->
+  <g class="fl fd1">
+    <path class="base" d="M202 250 H262" marker-end="url(#arrow)"/>
+    <circle class="halo" cx="208" cy="250" r="6"/><circle class="dot" cx="208" cy="250" r="3.4"/>
+  </g>
+  <g class="fl fd2">
+    <path class="base" d="M410 250 H470" marker-end="url(#arrow)"/>
+    <circle class="halo" cx="416" cy="250" r="6"/><circle class="dot" cx="416" cy="250" r="3.4"/>
+  </g>
+  <g class="fl fd3">
+    <path class="base" d="M700 250 H760" marker-end="url(#arrow)"/>
+    <circle class="halo" cx="706" cy="250" r="6"/><circle class="dot" cx="706" cy="250" r="3.4"/>
+  </g>
+  <g class="fl fd4">
+    <path class="base" d="M918 250 H978" marker-end="url(#arrow)"/>
+    <circle class="halo" cx="924" cy="250" r="6"/><circle class="dot" cx="924" cy="250" r="3.4"/>
+  </g>
+
+  <!-- 1. SKILL.md -->
+  <g class="g d1">
+    <rect class="node" x="44" y="210" width="158" height="82" rx="11"/>
+    <text class="lbl" x="123" y="248" text-anchor="middle">SKILL.md</text>
+    <text class="sub" x="123" y="272" text-anchor="middle">frontmatter + body</text>
+  </g>
+
+  <!-- 2. Parser -->
+  <g class="g d2">
+    <rect class="node" x="262" y="210" width="148" height="82" rx="11"/>
+    <text class="lbl" x="336" y="248" text-anchor="middle">Parser</text>
+    <text class="sub" x="336" y="272" text-anchor="middle">YAML + Markdown</text>
+  </g>
+
+  <!-- 3. Rule engine (central, taller) -->
+  <g class="g d3">
+    <rect class="node" x="470" y="188" width="230" height="126" rx="12"/>
+    <text class="lbl" x="585" y="232" text-anchor="middle">Rule engine</text>
+    <text class="sub" x="585" y="258" text-anchor="middle">26 rules across 7 categories</text>
+    <text class="sub" x="585" y="280" text-anchor="middle" fill="#59626f">A B C D E F &#183; G penalty</text>
+  </g>
+
+  <!-- 4. Scorer -->
+  <g class="g d4">
+    <rect class="node" x="760" y="210" width="158" height="82" rx="11"/>
+    <text class="lbl" x="839" y="244" text-anchor="middle">Scorer</text>
+    <text class="sub" x="839" y="268" text-anchor="middle">normalize to 0-100</text>
+  </g>
+
+  <!-- 5. Scorecard (accent) -->
+  <g class="g d5">
+    <rect class="accent pulse" x="978" y="210" width="140" height="82" rx="11"/>
+    <text class="lbl" x="1048" y="244" text-anchor="middle" fill="#cfe4ff">Scorecard</text>
+    <text class="sub" x="1048" y="268" text-anchor="middle" fill="#4d9fff">score &#183; grade</text>
+  </g>
+
+  <!-- output format chips -->
+  <g class="g d6">
+    <text class="sub" x="978" y="330" font-size="12" fill="#59626f">pretty &#183; json &#183; sarif</text>
+  </g>
+
+  <!-- legend caption -->
+  <text class="cap" x="44" y="426">Every arrow is on&#8209;device.  <tspan class="capA">No dashed lines</tspan>:  skillscore never touches the network.</text>
+</svg>
