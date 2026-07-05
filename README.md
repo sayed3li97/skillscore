@@ -1,7 +1,7 @@
-# skillscore — lint and score AI agent skills (SKILL.md)
+# skillscore
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/cover.png" alt="skillscore — score your AI agent's SKILL.md 0 to 100 against the Claude, Codex, and Antigravity authoring guides" width="100%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/cover.png" alt="skillscore: score your AI agent's SKILL.md 0 to 100 against the Claude, Codex, and Antigravity authoring guides" width="100%">
 </p>
 
 [![CI](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml/badge.svg)](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml)
@@ -10,86 +10,27 @@
 [![Open VSX](https://img.shields.io/open-vsx/v/sayed-ali-alkamel/skillscore?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**skillscore** statically analyzes any AI agent skill — a `SKILL.md` manifest
-and its folder — and produces a **0–100 quality score**, a **letter grade**,
-and a list of **actionable findings**, scored against the official skill
-authoring guides from **Anthropic (Claude)**, **Google (Antigravity)**, and
-**OpenAI (Codex)**. Offline, deterministic, CI-friendly.
+**skillscore** statically analyzes any AI agent skill (a `SKILL.md` manifest and its folder) and produces a **0 to 100 quality score**, a **letter grade**, and a list of **actionable findings**, scored against the official skill-authoring guides from **Anthropic (Claude)**, **Google (Antigravity)**, and **OpenAI (Codex)**. It is offline, deterministic, and built for CI.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/shots/score.png" alt="Terminal: skillscore scores a skill 100 out of 100 grade A, with token budget, per-category bars A through G, and no findings" width="88%">
+</p>
 
 ## What is skillscore?
 
-skillscore is a **skill linter / SKILL.md validator / agent-skill quality
-checker / AI skill scorer**. Agent skills are an open standard — a folder
-with a `SKILL.md` (YAML frontmatter + Markdown body) plus optional
-`references/`, `examples/`, `scripts/`, and `assets/` — used by Claude Code,
-Codex, Antigravity, Gemini CLI, and Cursor. Because an agent keeps every
-skill's `name` and `description` in its context budget permanently, **a vague
-or malformed skill is worse than no skill**. skillscore catches exactly those
-problems before a skill ships.
+skillscore is a **skill linter, `SKILL.md` validator, and agent-skill quality checker**. Agent skills are an open standard: a folder with a `SKILL.md` (YAML frontmatter plus a Markdown body) and optional `references/`, `examples/`, `scripts/`, and `assets/` subfolders, used by Claude Code, Codex, Antigravity, Gemini CLI, and Cursor.
 
-## See it in action
+Because an agent keeps every skill's `name` and `description` in its context budget permanently, **a vague or malformed skill is worse than no skill**. skillscore catches exactly those problems before a skill ships, and it never leaves your machine.
 
-Score a single skill — here, the Flutter team's own `flutter-add-widget-test`
-(90/A) — with a full per-category breakdown and cited findings:
+## How it works
+
+A manifest goes in, a score comes out. Every step runs locally.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/skillscore-demo.gif" alt="Terminal recording: skillscore scores the Flutter team's flutter-add-widget-test skill 90 out of 100 grade A with per-category bars and two findings, then skillscore explain shows the rule rationale and its Flutter authoring-guide source" width="85%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/pipeline.svg" alt="Pipeline diagram: SKILL.md to Parser to a Rule engine of 26 rules across 7 categories to the Scorer that normalizes to 0-100 to a Scorecard, with a note that every step is on-device and skillscore never touches the network" width="100%">
 </p>
 
-Or scan several skills at once and drill into the lowest scorer — here,
-three skills from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills):
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/multipath-demo.gif" alt="Terminal recording: skillscore scores three agent-skills in one command (spec-driven-development 91/A, test-driven-development 88/B, performance-optimization 77/C), then a second command drills into performance-optimization showing the missing Safety section error and vague description warning" width="85%">
-</p>
-
-## Token budget
-
-Every scorecard now includes the BPE token cost of each skill, split by the two scopes in which agent runtimes load SKILL.md content:
-
-```text
-  Tokens  description (permanent)    67 gpt-4   ~74 claude
-          full manifest (active)   1474 gpt-4  ~1622 claude
-```
-
-**Permanent** is the per-prompt cost — the agent loads the `description` field on every call so it knows which skills exist. **Active** is the per-invocation cost, paid only when the agent decides to use the skill.
-
-The counts use the **cl100k_base** BPE vocabulary (exact for GPT-4 and Codex; Claude estimates add 10% overhead).
-
-Tested on all 31 skills from [google/skills](https://github.com/google/skills):
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/token-demo.gif" alt="Terminal recording: skillscore scans all 31 Google skills, then drills into the top scorer (95/A, 67-token description) and the lowest scorer (56/F, 142-token description), showing token counts alongside each scorecard" width="85%">
-</p>
-
-Description token counts across the Google skills repo ranged from **24 to 142** — a 6x spread. The 56/F `gke-basics` skill pays 142 tokens on every prompt just for discovery, while the 95/A `agent-platform-tuning-management` skill pays 67. Less tokens, better score, better skill.
-
-Token counts also appear in `--format json` under a `tokens` key, making them available to dashboards and CI pipelines.
-
-### API-validated accuracy
-
-The +10% Claude estimate was validated against the official **Anthropic `count_tokens` API** across all 31 Google skills:
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/validate-demo.gif" alt="Terminal recording: skillscore estimate for gke-basics followed by the Anthropic count_tokens API validation across all 31 Google skills, showing mean overhead of +10.2% and median of +10.0%" width="85%">
-</p>
-
-| Metric | Value |
-|---|---|
-| Skills validated | 31 (all of google/skills) |
-| Mean actual Claude overhead vs cl100k | +10.2% |
-| Median | +10.0% |
-| Range | +0% to +20% (varies with keyword density) |
-
-The heuristic is accurate on average. Individual skills with dense trigger-keyword lists in their descriptions (like `gke-basics`) run toward +18-20%; clean prose descriptions run toward 0-6%.
-
-## Editor integration
-
-Prefer to score inside your IDE? The **[Skillscore VS Code extension](https://github.com/sayed3li97/skillscore-vscode)** wraps this CLI and adds inline diagnostics, hover tooltips, a sidebar score panel, and a live status-bar indicator — available for VS Code, Antigravity IDE, VSCodium, and Cursor.
-
-Install from the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore) or [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore).
-
----
+The parser reads the frontmatter and body, the rule engine runs 26 checks grouped into 7 categories, and the scorer normalizes the result to a 0 to 100 score with a letter grade. There is no network call anywhere in that path.
 
 ## Quickstart
 
@@ -103,163 +44,150 @@ skillscore path/to/SKILL.md
 # Score every skill in a folder or monorepo
 skillscore path/to/skills/
 
-# Score multiple specific skills in one command
+# Score several specific skills in one command
 skillscore skill-a/ skill-b/ skill-c/
 
 # Pick a target ruleset
 skillscore my-skill/ --target claude
 
-# Machine-readable output for CI / dashboards
+# Machine-readable output for CI and dashboards
 skillscore my-skill/ --format json
 
 # Gate CI: fail the build if any skill scores below 80
 skillscore skills/ --min-score 80
 ```
 
-Sample output (trimmed):
+## Scoring, and the rubric
 
-```text
-csv-to-xlsx  (skills/spreadsheet-skill/SKILL.md)
-  Score: 72/100  Grade: C
+100 points, seven categories, each rule tagged with the authoring guide it comes from.
 
-  Tokens  description (permanent)    22 gpt-4   ~25 claude
-          full manifest (active)    185 gpt-4  ~204 claude
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/rubric.svg" alt="Rubric diagram: horizontal weight bars for Frontmatter validity 17 points, Description quality 28, Conciseness and token economy 15, Structure and progressive disclosure 15, Instruction quality 20, Content hygiene 10, and a Safety and scripts penalty up to minus 15, normalized to 0-100" width="100%">
+</p>
 
-  A  Frontmatter validity                     17/17  ██████████
-  B  Description quality                      12/25  █████░░░░░
-  C  Conciseness & token economy            10.5/15  ███████░░░
-  D  Structure & progressive disclosure       15/15  ██████████
-  E  Instruction quality                       9/20  █████░░░░░
-  F  Content hygiene                          10/10  ██████████
-  G  Safety & scripts                    no penalty
+Each rule awards full, partial, or zero points. Category G (safety) is a **penalty** of up to `-15` that applies only when a skill ships scripts or terminal commands. Profiles that exclude a rule (for example `--target claude` excludes the Codex-specific B4) are normalized back to a 0 to 100 scale, so scores stay comparable across targets.
 
-  WARNING B2_description_when  line 3
-          Description has no trigger clause saying when to use the skill.
-          fix: Add a trigger clause such as "Use when the user asks to ..."
-```
+**Grades:** A is 90 and up, B is 80 and up, C is 70 and up, D is 60 and up, F is below 60.
 
-## Commands and flags
-
-```text
-skillscore <path> [<path> ...]        Score one or more manifests, folders, or trees
-skillscore rules                      List every rule: id, title, weight, targets, source guide
-skillscore explain <rule-id>          Print a rule's rationale, the fix, and its source guide
-skillscore eval init <path>           Scaffold evals.json from the skill's description
-skillscore eval validate <path>       Validate and summarise evals.json
-skillscore eval run <path>            Run trigger-rate evals offline (no API key required)
-skillscore --version
-skillscore --help
-```
-
-| Flag | Values | Default | Purpose |
-|---|---|---|---|
-| `--target` | `claude` \| `antigravity` \| `codex` \| `universal` | `universal` | Which guide's ruleset to apply |
-| `--format` | `pretty` \| `json` \| `sarif` | `pretty` | Output format (SARIF 2.1.0 renders in code-review tools) |
-| `--min-score <n>` | 0–100 | — | Exit non-zero if any skill scores below `n` |
-| `--strict` | — | off | Treat warning-level findings as errors |
-| `--quiet` | — | off | Print only the final score line per skill |
-| `--no-color` | — | off | Disable ANSI colors |
-
-**Exit codes:** `0` all skills meet the threshold · `1` a skill is below
-`--min-score`, or `--strict` and any error/warning exists · `2` usage error
-(bad path, unreadable file, invalid flag).
-
-## How is the score calculated?
-
-100 points are distributed across categories A–F. Each rule awards full,
-partial, or zero points; partial-credit formulas are documented in each
-rule's doc comment and shown by `skillscore explain <id>`. Category G
-(safety) is a **penalty** of up to −15 that applies only when the skill
-ships scripts or terminal commands. Profiles that exclude a rule (e.g.
-`--target claude` excludes the Codex-specific B4) are normalized back to a
-0–100 scale, so scores are comparable across targets.
-
-**Grades:** A 90–100 · B 80–89 · C 70–79 · D 60–69 · F below 60.
-
-### The full rubric
+<details>
+<summary><b>The full rubric (all 26 rules)</b></summary>
 
 | Rule | Title | Pts | Severity | Targets | Source |
 |---|---|---|---|---|---|
 | `A1_frontmatter_present` | YAML frontmatter delimited by `---` | 4 | error | all | Anthropic |
-| `A2_name_format` | `name` ≤64 chars, lowercase/digits/hyphens | 4 | error | all | Anthropic |
-| `A3_name_reserved_words` | `name` avoids "anthropic"/"claude" | 3 | error (claude) / info | all | Anthropic |
-| `A4_description_present` | `description` present, ≤1024 chars | 4 | error | all | Anthropic |
+| `A2_name_format` | `name` at most 64 chars, lowercase / digits / hyphens | 4 | error | all | Anthropic |
+| `A3_name_reserved_words` | `name` avoids "anthropic" and "claude" | 3 | error (claude) / info | all | Anthropic |
+| `A4_description_present` | `description` present, at most 1024 chars | 4 | error | all | Anthropic |
 | `A5_frontmatter_keys` | Only recognized keys, no typos ("did you mean") | 2 | warning | all | Anthropic |
-| `B1_description_what` | States WHAT (opens with action verb) | 6 | warning | all | Anthropic |
+| `B1_description_what` | States WHAT (opens with an action verb) | 6 | warning | all | Anthropic |
 | `B2_description_when` | States WHEN ("use when ...") | 6 | warning | all | Anthropic |
 | `B3_third_person` | Written in third person | 5 | warning | all | Anthropic |
-| `B4_frontloaded_triggers` | Concrete keywords in first ~60 chars | 4 | warning | codex, universal | Codex |
+| `B4_frontloaded_triggers` | Concrete keywords in the first 60 chars | 4 | warning | codex, universal | Codex |
 | `B5_boundary_clause` | Has a "do not use" boundary | 4 | warning (antigravity) / info | antigravity, universal | Antigravity |
-| `C1_body_length` | Body ≤500 lines (linear to 0 at 1000) | 6 | warning | all | Anthropic |
+| `B6_description_truncation` | Self-contained within 250 chars (Claude routing) | 3 | warning | claude, universal | Anthropic |
+| `C1_body_length` | Body at most 500 lines (linear to 0 at 1000) | 6 | warning | all | Anthropic |
 | `C2_explainer_bloat` | No definitions of common knowledge | 5 | warning | all | Anthropic |
 | `C3_excessive_optionality` | No long "or" chains | 4 | info | all | Anthropic |
-| `D1_progressive_disclosure` | Depth split into references/examples | 5 | info | all | Anthropic |
+| `D1_progressive_disclosure` | Depth split into references / examples | 5 | info | all | Anthropic |
 | `D2_one_level_links` | Reference links one level deep | 5 | warning | all | Anthropic |
 | `D3_reference_toc` | Long reference files have a TOC | 5 | info | all | Anthropic |
 | `E1_anti_patterns` | States anti-patterns explicitly | 6 | warning | all | Flutter |
 | `E2_workflow_checklist` | Checklist or numbered workflow | 5 | warning | all | Anthropic |
-| `E3_feedback_loop` | Validate → fix → repeat loop | 5 | warning | all | Anthropic |
+| `E3_feedback_loop` | Validate, fix, repeat loop | 5 | warning | all | Anthropic |
 | `E4_code_example` | At least one fenced code example | 4 | warning | all | Anthropic |
 | `F1_time_sensitive` | No date-anchored statements that rot | 4 | warning | all | Anthropic |
 | `F2_forward_slashes` | Paths use forward slashes only | 3 | error | all | Anthropic |
 | `F3_consistent_terminology` | No synonym mixing (conservative) | 3 | info | all | Anthropic |
-| `G1_safety_section` | Scripts/commands need a Safety section | −8 | error | antigravity, universal | Antigravity |
-| `G2_script_docs` | Bundled scripts are documented | −7 | warning | all | Anthropic |
+| `G1_safety_section` | Scripts / commands need a Safety section | -8 | error | antigravity, universal | Antigravity |
+| `G2_script_docs` | Bundled scripts are documented | -7 | warning | all | Anthropic |
 
-Run `skillscore rules` for the live table and
-`skillscore explain <rule-id>` for any rule's rationale and fix.
+Run `skillscore rules` for the live table, or `skillscore explain <rule-id>` for any rule's rationale, fix, and source.
+
+</details>
+
+Every finding cites the guide it comes from, and `skillscore explain` prints the rationale and the fix:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/shots/explain.png" alt="Terminal: skillscore explain B2_description_when shows the title, category, points, severity, targets, source guide, why the rule exists, and how to fix it" width="88%">
+</p>
+
+## One manifest, four guides
+
+The same `SKILL.md` can be scored through four different authoring guides. Pick a lens with `--target`; the default `universal` is the union of all of them.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/targets.svg" alt="Targets diagram: one SKILL.md fans out to four target profiles: claude (Anthropic, adds B6), antigravity (Google, adds B5 and G1), codex (OpenAI, adds B4), and universal (every guide, portable, the default)" width="100%">
+</p>
+
+A skill that passes `universal` is portable across all four runtimes, because `universal` activates every guide's rules at once. Each rule stays tagged with its origin, so a finding always tells you which guide it comes from.
+
+## Scoring a whole monorepo
+
+Pass a folder or several paths and skillscore walks the tree, finds every `SKILL.md` (case-insensitive), scores each one, and prints a summary. Overlapping paths are deduplicated; if one path is bad, the rest still score and the bad one is reported as a warning.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/shots/multipath.png" alt="Terminal: skillscore scores three skills in one command, showing csv-to-xlsx 73 grade C, legacy-notes 7 grade F, pdf-form-filler 100 grade A, and a summary line with the count, average, and lowest score" width="88%">
+</p>
+
+## Token budget
+
+Every scorecard shows the BPE token cost of a skill, split by the two scopes in which agent runtimes load `SKILL.md` content:
+
+```text
+  Tokens  description (permanent)    67 gpt-4   ~74 claude
+          full manifest (active)   1474 gpt-4  ~1622 claude
+```
+
+**Permanent** is the per-prompt cost: the agent loads the `description` field on every call so it knows which skills exist. **Active** is the per-invocation cost, paid only when the agent decides to use the skill.
+
+Counts use the **cl100k_base** BPE vocabulary (exact for GPT-4 and Codex). The Claude estimate adds a calibrated 10% overhead, and it appears in `--format json` under a `tokens` key for dashboards and CI.
+
+<details>
+<summary><b>Validated against the Anthropic count_tokens API</b></summary>
+
+The 10% Claude estimate was checked against the official Anthropic `count_tokens` API across all 31 skills in [google/skills](https://github.com/google/skills):
+
+| Metric | Value |
+|---|---|
+| Skills validated | 31 (all of google/skills) |
+| Mean actual Claude overhead vs cl100k | +10.2% |
+| Median | +10.0% |
+| Range | +0% to +20% (varies with keyword density) |
+
+Descriptions dense with trigger keywords run toward +18 to +20%; clean prose runs toward 0 to 6%.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/token-demo.gif" alt="Terminal recording: skillscore scans all 31 Google skills, then drills into the top and lowest scorers, showing token counts alongside each scorecard" width="80%">
+</p>
+
+</details>
 
 ## Catching frontmatter typos (rule A5)
 
-The `SKILL.md` frontmatter is a fixed set of keys — `name`, `description`,
-`license`, `allowed-tools`, `metadata`, `version` — and YAML gives you no
-protection when you misspell one. Write `descrption:` and YAML happily
-accepts it as an unknown field while the real `description` goes *missing*.
-The skill still loads, but with empty metadata it is invocable only by name
-and is **never auto-triggered**. Strict validators, including Anthropic's own
-`skill-creator`, reject any unexpected key outright.
+The `SKILL.md` frontmatter is a fixed set of keys (`name`, `description`, `license`, `allowed-tools`, `metadata`, `version`), and YAML gives you no protection when you misspell one. Write `descrption:` and YAML happily accepts it as an unknown field while the real `description` goes *missing*. The skill still loads, but with empty metadata it is invocable only by name and is **never auto-triggered**. Strict validators, including Anthropic's own `skill-creator`, reject any unexpected key outright.
 
-Rule **`A5_frontmatter_keys`** catches this. It flags every top-level key
-outside the recognized set, and when the key is a near-miss for a real one
-(within an edit distance of two) it tells you which key you meant:
-
-```text
-$ skillscore my-skill/
-
-  ERROR   A4_description_present  line 1
-          Frontmatter has no non-empty "description" key.
-  WARNING A5_frontmatter_keys  line 3
-          Unknown frontmatter key "descrption". Did you mean "description"?
-```
-
-The two findings together tell the whole story: `A4` reports the field is
-gone, and `A5` points at the typo that swallowed it.
+Rule **`A5_frontmatter_keys`** catches this. It flags every top-level key outside the recognized set, and when the key is a near-miss for a real one (within an edit distance of two) it tells you which key you meant:
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/qa/a5/evidence/A5-02.png" alt="skillscore scoring a skill whose description key is misspelled descrption: an A4 error reports the missing description and an A5 warning says Unknown frontmatter key descrption, did you mean description?" width="80%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/qa/a5/evidence/A5-02.png" alt="skillscore scoring a skill whose description key is misspelled as descrption: an A4 error reports the missing description and an A5 warning says Unknown frontmatter key descrption, did you mean description?" width="82%">
 </p>
 
-**Design details:**
+The two findings together tell the whole story: `A4` reports the field is gone, and `A5` points at the typo that swallowed it. Design details:
 
-- **Custom fields are welcome — under `metadata`.** Only top-level keys are
-  checked, so anything nested inside a `metadata:` map is yours to name
-  freely and is never flagged.
-- **No false suggestions.** A genuinely unrecognized key such as `author`
-  is flagged without a misleading "did you mean", since it is not close to
-  any real key. (Move it under `metadata`.)
-- **No double-counting.** When the frontmatter is missing or malformed
-  entirely, `A5` stays silent and lets `A1` own that failure.
-- **Fully offline and deterministic**, like every other rule: the "did you
-  mean" suggestion is a local Levenshtein comparison, no network, no model.
+- **Custom fields are welcome, under `metadata`.** Only top-level keys are checked, so anything nested inside a `metadata:` map is yours to name freely and is never flagged.
+- **No false suggestions.** A genuinely unrecognized key such as `author` is flagged without a misleading "did you mean", because it is not close to any real key. (Move it under `metadata`.)
+- **No double-counting.** When the frontmatter is missing or malformed entirely, `A5` stays silent and lets `A1` own that failure.
+- **Fully offline and deterministic.** The "did you mean" suggestion is a local Levenshtein comparison. No network, no model.
 
-A full QA record for this rule — every case run against the compiled binary
-with screenshot evidence — lives in [`docs/qa/a5/`](docs/qa/a5/REPORT.md).
+A full QA record for this rule, every case run against the compiled binary with screenshot evidence, lives in [`docs/qa/a5/`](docs/qa/a5/REPORT.md).
 
 ## Eval harness
 
-Static linting tells you a skill is well-formed. The eval harness tells you
-**whether queries actually route to it correctly** — the thing that matters
-once a skill is deployed. Three subcommands, one workflow, zero API keys:
+Static linting tells you a skill is well-formed. The eval harness tells you **whether queries actually route to it**, the thing that matters once a skill is deployed. Three commands, one workflow, no API key.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/eval.svg" alt="Eval harness diagram: eval init scaffolds 20 queries (10 should-trigger, 10 should-not), eval validate checks balance and thresholds, eval run scores 3 runs per query and passes if the trigger-rate is at least 0.5, all offline with no API key" width="100%">
+</p>
 
 ```bash
 # 1. Scaffold 20 queries from the skill's description
@@ -268,81 +196,44 @@ skillscore eval init my-skill/
 # 2. Review and extend the generated queries
 cat my-skill/evals.json
 
-# 3. Run the eval — fully offline, no API key, no cost
+# 3. Run the eval, fully offline, no API key, no cost
 skillscore eval run my-skill/
 ```
 
-**`eval init`** reads the skill's `description` frontmatter and derives 20
-queries — 10 trigger (a request the skill should handle) and 10 non-trigger (a
-request it should not). Every query is a real English sentence grounded in the
-skill's trigger and boundary clauses; the file is runnable immediately and easy
-to extend with project-specific queries.
+`eval init` reads the `description` and derives 20 queries: 10 that should trigger the skill and 10 that should not. `eval validate` checks the suite has both classes and sane thresholds. `eval run` scores each query 3 times and passes it when the trigger-rate clears (or, for non-trigger queries, stays under) the 0.5 threshold.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-init.png" alt="Terminal: skillscore eval init pdf-form-filler/ — Created pdf-form-filler/evals.json, 20 queries scaffolded" width="85%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/shots/eval.png" alt="Terminal: skillscore eval run shows runs per query, threshold, query counts, a PASS table for trigger and non-trigger queries, and a final 20 passed 0 failed" width="88%">
 </p>
 
-**`eval validate`** parses `evals.json`, verifies it contains both trigger and
-non-trigger queries, and prints a structured summary of the test suite.
+<details>
+<summary><b>How the offline scoring heuristic works</b></summary>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-validate.png" alt="Terminal: skillscore eval validate pdf-form-filler/ — shows skill name, 10 trigger + 10 non-trigger, runs/query, threshold, 60 total checks" width="85%">
-</p>
-
-**`eval run`** executes 20 queries × 3 runs = 60 checks locally, streams live
-progress, then prints a per-query PASS/FAIL table. A trigger query passes when
-the heuristic scores it as triggered in at least 50% of runs; a non-trigger
-query passes when it stays below that threshold. FAILs on non-trigger queries
-show exactly which phrasings over-reach the skill's intended scope — and which
-boundary clause to tighten.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-run.png" alt="Terminal: skillscore eval run pdf-form-filler/ — live progress, then per-query PASS/FAIL table, 20 passed 0 failed" width="85%">
-</p>
-
-**`--format json`** on `eval run` emits a machine-readable result for
-dashboards and CI pipelines. The `runs_per_query` and `trigger_threshold`
-fields in `evals.json` can be tuned per-project.
-
-### How the scoring algorithm works
-
-`eval run` uses a **local heuristic** — no model call, no network, no API key.
-It scores each query by matching content words against three semantic regions
-extracted from the skill's `description` field:
+`eval run` uses a **local heuristic**, no model call and no network. It scores each query by matching content words against three regions pulled from the `description`:
 
 | Region | Source | Role |
 |---|---|---|
-| **Trigger terms** | `"Use when …"` clause, scaffold words stripped | What the skill is activated by |
-| **Boundary terms** | `"Do not use …"` clause | What the skill explicitly excludes |
-| **What terms** | First sentence of the description | The skill's primary capability |
+| **Trigger terms** | the "Use when ..." clause, scaffold words stripped | what activates the skill |
+| **Boundary terms** | the "Do not use ..." clause | what the skill excludes |
+| **What terms** | the first sentence of the description | the skill's primary capability |
 
-All text is lowercased, split on non-alphanumeric characters, stop-word
-filtered (`the`, `a`, `use`, `when`, `user`, `asks`, …), and suffix-stemmed
-(`-ing`, `-tion`, `-ed`, `-es`, `-s`) before any comparison.
+All text is lowercased, tokenized, stop-word filtered, and suffix-stemmed before comparison.
 
-The decision path for each query:
+**Boundary exclusivity.** A boundary term penalizes a query only when it does not also appear in the trigger or what regions. This stops a shared noun (for example `pdf` in "Do not use for scanned PDFs") from falsely blocking a trigger query that legitimately mentions the same noun.
+
+**Wave noise.** A small deterministic offset cycles through roughly plus or minus 7% across successive calls, so a borderline query may trigger on two runs of three and not the other, modeling the natural variance of a real model.
+
+**What PASS and FAIL mean.** A trigger query passes when its triggered count is at least `trigger_threshold x runs_per_query` (default 2 of 3); a non-trigger query passes when it stays below that. The heuristic measures textual alignment with the skill's declared intent, not live model routing, so use it to catch obvious description problems early.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/feat/eval-harness/docs/assets/eval-algo.png" alt="Flowchart: the HeuristicEvalClient scoring algorithm — meta-query check, clause term extraction, boundary exclusivity filter, content-word match count, wave noise, and final threshold comparison" width="60%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/eval-algo.png" alt="Flowchart of the heuristic scoring algorithm: meta-query check, clause term extraction, boundary exclusivity filter, content-word match count, wave noise, and the final threshold comparison" width="58%">
 </p>
 
-**Boundary exclusivity.** A boundary term only penalises a query when it does
-not also appear in the trigger or what context. This prevents shared nouns
-(e.g. `"pdf"` in `"Do not use for scanned PDFs"`) from falsely blocking
-trigger queries that legitimately mention the same noun.
+</details>
 
-**Wave noise.** A small deterministic offset — `((i % 7 − 3) / 3.5) × 0.07`
-— cycles through roughly ±7% across successive calls. With three runs per
-query, a borderline query may trigger on two runs and not on one, modelling
-the natural stochasticity of a real model across repeated calls.
+## Output formats and CI
 
-**What PASS/FAIL means.** A trigger query passes when triggered count
-`≥ trigger_threshold × runs_per_query` (default: 2 of 3). A non-trigger query
-passes when it stays below that fraction. The heuristic measures textual
-alignment with the skill's declared intent — not actual model routing. Use it
-to catch obvious description problems early in the authoring loop.
-
-## How do I gate CI on skill quality?
+Three renderers, one flag. `pretty` (the default) is the colored scorecard; `json` is a stable machine shape for dashboards; `sarif` is a valid SARIF 2.1.0 document that GitHub code scanning renders as inline PR annotations.
 
 ```yaml
 # .github/workflows/skills.yml
@@ -352,60 +243,37 @@ to catch obvious description problems early in the authoring loop.
     skillscore skills/ --min-score 80 --no-color
 ```
 
-`--format json` feeds dashboards; `--format sarif` uploads to GitHub code
-scanning so findings annotate pull requests.
+`--min-score` fails the build when any skill scores below the threshold, `--strict` promotes warnings to failures, and the exit codes are designed for pipelines: `0` all good, `1` a quality gate failed, `2` a usage error.
 
-## FAQ
+## Commands and flags
 
-**What is an agent skill?**
-A folder with a `SKILL.md` manifest (YAML frontmatter + Markdown
-instructions) that teaches an AI agent a repeatable task. Optional
-subfolders hold references, examples, scripts, and assets.
+```text
+skillscore <path> [<path> ...]     Score one or more manifests, folders, or trees
+skillscore rules                   List every rule: id, points, severity, targets, source
+skillscore explain <rule-id>       Print a rule's rationale, the fix, and its source guide
+skillscore eval init <path>        Scaffold evals.json from the skill's description
+skillscore eval validate <path>    Validate and summarize evals.json
+skillscore eval run <path>         Run trigger-rate evals offline (no API key)
+skillscore --version
+skillscore --help
+```
 
-**Does skillscore work with Claude Code / Codex / Antigravity / Gemini CLI / Cursor?**
-Yes. The SKILL.md format is shared across all of them. Score against one
-vendor's rules with `--target`, or use the default `universal` profile,
-which a portable skill should pass everywhere.
+| Flag | Values | Default | Purpose |
+|---|---|---|---|
+| `--target` | `claude` \| `antigravity` \| `codex` \| `universal` | `universal` | Which guide's ruleset to apply |
+| `--format` | `pretty` \| `json` \| `sarif` | `pretty` | Output format (SARIF renders in code-review tools) |
+| `--min-score <n>` | 0 to 100 | unset | Exit non-zero if any skill scores below `n` |
+| `--strict` | flag | off | Treat warning-level findings as failures |
+| `--quiet` | flag | off | Print only the score line per skill |
+| `--no-color` | flag | off | Disable ANSI colors |
 
-**Is it offline?**
-Completely. skillscore makes no network calls — both the linter and the eval
-harness run on local files only. The eval heuristic is deterministic given the
-same description and query set.
+**Exit codes:** `0` every skill met the gate. `1` a skill is below `--min-score`, or `--strict` found an error or warning, or an eval run failed. `2` a usage error (bad path, unreadable file, unknown rule, invalid flag).
 
-**How do I score every skill in a monorepo?**
-`skillscore path/to/repo/` — it walks the tree, finds every folder with a
-`SKILL.md` (case-insensitive), and scores each one, deterministically
-ordered by path.
+## Editor integration
 
-**How do I score a specific set of skills in one command?**
-Pass each path as a separate argument: `skillscore skill-a/ skill-b/ skill-c/`.
-You get a combined report with a summary line showing the count, average, and
-lowest score. Duplicate paths are silently deduplicated, so overlapping
-arguments (e.g. a tree root and one of its children) each score once. If one
-path is invalid, the rest still score and the bad path is reported as a warning.
+Prefer to score inside your IDE? The **[Skillscore VS Code extension](https://github.com/sayed3li97/skillscore-vscode)** wraps this CLI and adds inline diagnostics, hover tooltips with the fix and rule id, a sidebar score panel, and a live status-bar indicator. It works in VS Code, Antigravity IDE, VSCodium, and Cursor.
 
-**Does my skill have to be named a certain way?**
-No. skillscore is name-agnostic: the frontmatter `name`, the folder name,
-and the file name are all independent, and unusual names (including
-non-ASCII folder names) are handled — though rule A2 will tell you if the
-`name` field itself violates the official format.
-
-**What happens with malformed frontmatter?**
-No crash: the relevant A-category errors are reported and every other rule
-that can still run does, so you always get a score.
-
-## How does skillscore compare to alternatives?
-
-- **Vendor skill validators** (e.g. quick checks built into agent CLIs)
-  verify only schema validity — name format, description present. skillscore
-  additionally scores *quality*: discoverability, conciseness, structure,
-  instruction design, hygiene, and safety, with cited sources per rule.
-- **Generic Markdown linters** (markdownlint, Vale) check prose style, not
-  skill semantics; they don't know what a frontmatter `description` must
-  contain for an agent to find the skill.
-- **Asking an LLM to review your skill** is non-deterministic and
-  unsuitable for CI gates. skillscore is static, reproducible, and exits
-  with codes designed for pipelines. The two combine well.
+Install from the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore) or [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore).
 
 ## Library use
 
@@ -421,14 +289,32 @@ void main() {
 }
 ```
 
+## FAQ
+
+**What is an agent skill?**
+A folder with a `SKILL.md` manifest (YAML frontmatter plus Markdown instructions) that teaches an AI agent a repeatable task. Optional subfolders hold references, examples, scripts, and assets.
+
+**Does it work with Claude Code, Codex, Antigravity, Gemini CLI, and Cursor?**
+Yes. They share the `SKILL.md` format. Score against one vendor's rules with `--target`, or use the default `universal` profile that a portable skill should pass everywhere.
+
+**Is it offline?**
+Completely. Both the linter and the eval harness read local files only and make no network calls. Output is deterministic given the same input.
+
+**Does my skill have to be named a certain way?**
+No. skillscore is name-agnostic: the frontmatter `name`, the folder name, and the file name are independent. Unusual and non-ASCII folder names are handled, though rule A2 will tell you if the `name` field itself breaks the official format.
+
+**What happens with malformed frontmatter?**
+No crash. The relevant A-category errors are reported and every other rule that can still run does, so you always get a score.
+
+## How does skillscore compare?
+
+- **Vendor skill validators** verify only schema validity (name format, description present). skillscore additionally scores *quality*: discoverability, conciseness, structure, instruction design, hygiene, and safety, with a cited source per rule.
+- **Generic Markdown linters** (markdownlint, Vale) check prose style, not skill semantics. They do not know what a frontmatter `description` needs for an agent to find the skill.
+- **Asking an LLM to review a skill** is non-deterministic and unsuitable for a CI gate. skillscore is static, reproducible, and exits with pipeline-friendly codes. The two combine well.
+
 ## Contributing
 
-New rules are one class + one registration — see
-[CONTRIBUTING.md](CONTRIBUTING.md) for the walkthrough and the project's
-design principles (every rule cites its source guide, deterministic output,
-offline only, name-agnostic). Use the
-["Propose a new rule" issue template](.github/ISSUE_TEMPLATE/propose_a_rule.yml)
-to suggest one.
+A new rule is one class plus one registration. See [CONTRIBUTING.md](CONTRIBUTING.md) for the walkthrough and the project's design principles: every rule cites its source guide, output is deterministic, everything is offline, and nothing assumes a skill's name. Use the ["Propose a new rule" issue template](.github/ISSUE_TEMPLATE/propose_a_rule.yml) to suggest one.
 
 ## License
 

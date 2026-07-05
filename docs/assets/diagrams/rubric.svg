@@ -1,0 +1,99 @@
+<svg viewBox="0 0 1160 600" xmlns="http://www.w3.org/2000/svg" font-family="'SFMono-Regular','SF Mono','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace">
+  <defs>
+    <style>
+      .card { fill:#0d1117; stroke:#1b2029; }
+      .zone { fill:#59626f; font-size:13px; letter-spacing:.22em; }
+      .sub  { fill:#7d8795; font-size:15px; }
+      .badge{ fill:#12171f; stroke:#2a323d; stroke-width:1.4; }
+      .bl   { fill:#cfe4ff; font-size:15px; font-weight:600; }
+      .name { fill:#e6edf3; font-size:17px; }
+      .pts  { fill:#7d8795; font-size:14px; }
+      .track{ fill:#151b23; }
+      .fill { fill:#3a7fd5; transform-box:fill-box; transform-origin:left center;
+              animation:grow 1.05s cubic-bezier(.2,.7,.2,1) both; }
+      .pen  { fill:#b3453f; }
+      .row  { animation:fade .5s ease both; }
+      .cap  { fill:#59626f; font-size:14px; }
+      .capA { fill:#4d9fff; font-size:14px; }
+      @keyframes grow{from{transform:scaleX(0.001)}to{transform:scaleX(1)}}
+      @keyframes fade{from{opacity:0}to{opacity:1}}
+      .r1{animation-delay:.05s}.f1{animation-delay:.15s}
+      .r2{animation-delay:.15s}.f2{animation-delay:.25s}
+      .r3{animation-delay:.25s}.f3{animation-delay:.35s}
+      .r4{animation-delay:.35s}.f4{animation-delay:.45s}
+      .r5{animation-delay:.45s}.f5{animation-delay:.55s}
+      .r6{animation-delay:.55s}.f6{animation-delay:.65s}
+      .r7{animation-delay:.65s}.f7{animation-delay:.75s}
+    </style>
+  </defs>
+
+  <rect class="card" x="8" y="8" width="1144" height="584" rx="18"/>
+  <text class="zone" x="44" y="54">RUBRIC</text>
+  <text class="sub"  x="44" y="80">100 points, seven categories.  Each rule cites the guide it comes from</text>
+
+  <!-- A -->
+  <g class="row r1">
+    <rect class="badge" x="44" y="122" width="30" height="30" rx="7"/>
+    <text class="bl" x="59" y="143" text-anchor="middle">A</text>
+    <text class="name" x="88" y="143">Frontmatter validity</text>
+    <rect class="track" x="470" y="128" width="520" height="18" rx="9"/>
+    <rect class="fill f1" x="470" y="128" width="316" height="18" rx="9"/>
+    <text class="pts" x="1108" y="142" text-anchor="end">17 pts</text>
+  </g>
+  <!-- B -->
+  <g class="row r2">
+    <rect class="badge" x="44" y="180" width="30" height="30" rx="7"/>
+    <text class="bl" x="59" y="201" text-anchor="middle">B</text>
+    <text class="name" x="88" y="201">Description quality</text>
+    <rect class="track" x="470" y="186" width="520" height="18" rx="9"/>
+    <rect class="fill f2" x="470" y="186" width="520" height="18" rx="9"/>
+    <text class="pts" x="1108" y="200" text-anchor="end">28 pts</text>
+  </g>
+  <!-- C -->
+  <g class="row r3">
+    <rect class="badge" x="44" y="238" width="30" height="30" rx="7"/>
+    <text class="bl" x="59" y="259" text-anchor="middle">C</text>
+    <text class="name" x="88" y="259">Conciseness &amp; token economy</text>
+    <rect class="track" x="470" y="244" width="520" height="18" rx="9"/>
+    <rect class="fill f3" x="470" y="244" width="279" height="18" rx="9"/>
+    <text class="pts" x="1108" y="258" text-anchor="end">15 pts</text>
+  </g>
+  <!-- D -->
+  <g class="row r4">
+    <rect class="badge" x="44" y="296" width="30" height="30" rx="7"/>
+    <text class="bl" x="59" y="317" text-anchor="middle">D</text>
+    <text class="name" x="88" y="317">Structure &amp; progressive disclosure</text>
+    <rect class="track" x="470" y="302" width="520" height="18" rx="9"/>
+    <rect class="fill f4" x="470" y="302" width="279" height="18" rx="9"/>
+    <text class="pts" x="1108" y="316" text-anchor="end">15 pts</text>
+  </g>
+  <!-- E -->
+  <g class="row r5">
+    <rect class="badge" x="44" y="354" width="30" height="30" rx="7"/>
+    <text class="bl" x="59" y="375" text-anchor="middle">E</text>
+    <text class="name" x="88" y="375">Instruction quality</text>
+    <rect class="track" x="470" y="360" width="520" height="18" rx="9"/>
+    <rect class="fill f5" x="470" y="360" width="371" height="18" rx="9"/>
+    <text class="pts" x="1108" y="374" text-anchor="end">20 pts</text>
+  </g>
+  <!-- F -->
+  <g class="row r6">
+    <rect class="badge" x="44" y="412" width="30" height="30" rx="7"/>
+    <text class="bl" x="59" y="433" text-anchor="middle">F</text>
+    <text class="name" x="88" y="433">Content hygiene</text>
+    <rect class="track" x="470" y="418" width="520" height="18" rx="9"/>
+    <rect class="fill f6" x="470" y="418" width="186" height="18" rx="9"/>
+    <text class="pts" x="1108" y="432" text-anchor="end">10 pts</text>
+  </g>
+  <!-- G penalty -->
+  <g class="row r7">
+    <rect class="badge" x="44" y="470" width="30" height="30" rx="7"/>
+    <text class="bl" x="59" y="491" text-anchor="middle" fill="#e79890">G</text>
+    <text class="name" x="88" y="491">Safety &amp; scripts</text>
+    <rect class="track" x="470" y="476" width="520" height="18" rx="9"/>
+    <rect class="fill pen f7" x="470" y="476" width="279" height="18" rx="9"/>
+    <text class="pts" x="1108" y="490" text-anchor="end" fill="#e79890">up to &#8722;15 penalty</text>
+  </g>
+
+  <text class="cap" x="44" y="556">Normalized to <tspan class="capA">0-100</tspan>.  Grade: A 90+ &#183; B 80+ &#183; C 70+ &#183; D 60+ &#183; F below.</text>
+</svg>
