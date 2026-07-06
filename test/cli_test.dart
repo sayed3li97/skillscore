@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:skillscore/skillscore.dart';
 import 'package:test/test.dart';
@@ -268,6 +269,69 @@ void main() {
       expect(result.code, exitOk);
       expect(result.out, contains('Usage'));
       expect(result.out, contains('--min-score'));
+    });
+  });
+
+  group('--fix', () {
+    Directory tempSkill(String manifest) {
+      final dir = Directory.systemTemp.createTempSync('sk_fix_');
+      File('${dir.path}/SKILL.md').writeAsStringSync(manifest);
+      return dir;
+    }
+
+    test('renames a misspelled key in place and reports it', () async {
+      final dir = tempSkill('---\n'
+          'name: pdf-form-filler\n'
+          'descrption: >-\n'
+          '  Fills PDF forms. Use when the user asks to fill a PDF form. '
+          'Do not use for scans.\n'
+          '---\n# PDF\n## Safety\nNever overwrite.\n');
+      try {
+        final result = await run([dir.path, '--fix', '--no-color']);
+        expect(result.code, isIn([exitOk, exitFailedGate]));
+        expect(result.out, contains('Fixed 1 issue'));
+        expect(result.out, contains('rename "descrption" to "description"'));
+        final fixed = File('${dir.path}/SKILL.md').readAsStringSync();
+        expect(fixed, contains('description: >-'));
+        expect(fixed, isNot(contains('descrption')));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('is a no-op when nothing is safely fixable', () async {
+      final dir = tempSkill('---\n'
+          'name: pdf-form-filler\n'
+          'description: >-\n'
+          '  Fills PDF forms. Use when the user asks to fill a PDF form. '
+          'Do not use for scans.\n'
+          '---\n# PDF\n## Safety\nNever overwrite.\n');
+      try {
+        final before = File('${dir.path}/SKILL.md').readAsStringSync();
+        final result = await run([dir.path, '--fix', '--no-color']);
+        expect(result.out, isNot(contains('Fixed')));
+        expect(File('${dir.path}/SKILL.md').readAsStringSync(), before);
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('does not touch an unsuggestable unknown key', () async {
+      final dir = tempSkill('---\n'
+          'name: pdf-form-filler\n'
+          'description: >-\n'
+          '  Fills PDF forms. Use when the user asks to fill a PDF form. '
+          'Do not use for scans.\n'
+          'author: someone\n'
+          '---\n# PDF\n## Safety\nNever overwrite.\n');
+      try {
+        final result = await run([dir.path, '--fix', '--no-color']);
+        expect(result.out, isNot(contains('Fixed')));
+        expect(File('${dir.path}/SKILL.md').readAsStringSync(),
+            contains('author: someone'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
     });
   });
 }

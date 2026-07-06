@@ -9,6 +9,7 @@ import '../eval/eval_parser.dart';
 import '../eval/eval_reporter.dart';
 import '../eval/eval_runner.dart';
 import '../eval/eval_scaffolder.dart';
+import '../fixing/fixer.dart';
 import '../model/finding.dart';
 import '../parsing/skill_parser.dart';
 import '../reporting/json_reporter.dart';
@@ -51,6 +52,10 @@ Future<int> runCli(List<String> arguments,
         help: 'Exit non-zero if any skill scores below this (CI gating).')
     ..addFlag('strict',
         negatable: false, help: 'Treat warning-level findings as errors.')
+    ..addFlag('fix',
+        negatable: false,
+        help: 'Apply safe auto-fixes in place '
+            '(e.g. rename a misspelled frontmatter key), then re-score.')
     ..addFlag('quiet',
         negatable: false, help: 'Print only the final score line per skill.')
     ..addFlag('no-color', negatable: false, help: 'Disable ANSI colors.')
@@ -166,6 +171,7 @@ int _score(
   final target = targetFromName(args['target'] as String)!;
   final format = args['format'] as String;
   final strict = args['strict'] as bool;
+  final applyFix = args['fix'] as bool;
   final quiet = args['quiet'] as bool;
   final noColor = args['no-color'] as bool;
 
@@ -240,8 +246,50 @@ int _score(
     return exitUsage;
   }
 
+  // --fix: apply safe, mechanical fixes in place, then re-score the fixed
+  // manifests so the report and the exit code reflect the corrected state.
+  final fixSummary = <String>[];
+  if (applyFix) {
+    const fixer = SkillFixer();
+    for (final result in results) {
+      final outcome = fixer.fix(result.doc.manifestPath, result.findings);
+      if (outcome.error != null) {
+        warnings.add('could not fix ${result.doc.manifestPath}: '
+            '${outcome.error}');
+        continue;
+      }
+      for (final f in outcome.applied) {
+        fixSummary.add('  ${result.doc.displayName}  ${f.summary}  '
+            '(line ${f.line})');
+      }
+    }
+    if (fixSummary.isNotEmpty) {
+      final rescored = <ScoreResult>[];
+      for (final result in results) {
+        try {
+          rescored.add(scorer.score(
+              skillParser.parseFile(result.doc.manifestPath), target));
+        } on SkillInputException {
+          rescored.add(result);
+        }
+      }
+      results
+        ..clear()
+        ..addAll(rescored);
+    }
+  }
+
   for (final warning in warnings) {
     err.writeln('warning: $warning');
+  }
+
+  if (fixSummary.isNotEmpty && format != 'json' && format != 'sarif') {
+    out.writeln('Fixed ${fixSummary.length} '
+        '${fixSummary.length == 1 ? 'issue' : 'issues'}:');
+    for (final line in fixSummary) {
+      out.writeln(line);
+    }
+    out.writeln();
   }
 
   switch (format) {

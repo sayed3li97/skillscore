@@ -36,6 +36,33 @@ Target? targetFromName(String name) {
   return null;
 }
 
+/// A safe, mechanical correction that fully resolves a finding when applied
+/// by `skillscore --fix`.
+///
+/// The only fix type today is a top-level frontmatter key rename (for
+/// example `descrption:` becomes `description:` when rule A5 has a confident
+/// "did you mean" suggestion). Fixes are deterministic and idempotent.
+class FindingFix {
+  /// Creates a key-rename fix.
+  const FindingFix({
+    required this.line,
+    required this.fromKey,
+    required this.toKey,
+  });
+
+  /// The 1-based manifest line holding the key to rename.
+  final int line;
+
+  /// The misspelled key as written, for example `descrption`.
+  final String fromKey;
+
+  /// The corrected key, for example `description`.
+  final String toKey;
+
+  /// A one-line, human-readable summary of the edit.
+  String get summary => 'rename "$fromKey" to "$toKey"';
+}
+
 /// A single actionable issue discovered while evaluating a skill.
 class Finding {
   /// Creates a finding.
@@ -46,6 +73,7 @@ class Finding {
     required this.fixHint,
     required this.sourceGuide,
     this.line,
+    this.fix,
   });
 
   /// The id of the rule that produced this finding, e.g. `B2_description_when`.
@@ -67,6 +95,14 @@ class Finding {
   /// The 1-based line number in the manifest, when known.
   final int? line;
 
+  /// A safe, mechanical fix that resolves this finding, when one exists.
+  /// Applied by `skillscore --fix`; null when the finding is not
+  /// auto-fixable.
+  final FindingFix? fix;
+
+  /// Whether this finding can be resolved automatically by `--fix`.
+  bool get isFixable => fix != null;
+
   /// The rubric category letter (`A`..`G`), derived from [ruleId].
   String get category => ruleId.substring(0, 1);
 
@@ -78,5 +114,6 @@ class Finding {
         fixHint: fixHint,
         sourceGuide: sourceGuide,
         line: line,
+        fix: fix,
       );
 }
