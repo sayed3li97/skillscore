@@ -1,7 +1,7 @@
 # skillscore
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/cover.png" alt="skillscore: score your AI agent's SKILL.md 0 to 100 against the Claude, Codex, and Antigravity authoring guides" width="100%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/cover.png" alt="skillscore cover: score your agent's SKILL.md 0 to 100. A radial rubric ring shows a perfect score of 100, grade A, formed by six weighted category segments, in a dark monospace blue-accent theme" width="100%">
 </p>
 
 [![CI](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml/badge.svg)](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml)
