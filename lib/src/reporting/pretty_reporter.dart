@@ -87,15 +87,16 @@ class PrettyReporter {
       buffer.writeln();
       for (final f in findings) {
         final loc = f.line == null ? '' : '  line ${f.line}';
-        buffer.writeln(
-            '  ${_severityLabel(severity)} ${_paint(f.ruleId, '1')}$loc');
+        final fixable = f.isFixable ? _paint('  [fixable]', '32') : '';
+        buffer.writeln('  ${_severityLabel(severity)} '
+            '${_paint(f.ruleId, '1')}$loc$fixable');
         buffer.writeln('          ${f.message}');
         buffer.writeln('          ${_paint('fix: ${f.fixHint}', '2')}');
       }
     }
     if (result.findings.isEmpty) {
       buffer.writeln();
-      buffer.writeln('  ${_paint('No findings — nice work.', '32')}');
+      buffer.writeln('  ${_paint('No findings. Nice work.', '32')}');
     }
     buffer.writeln();
   }

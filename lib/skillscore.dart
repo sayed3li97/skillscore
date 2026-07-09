@@ -23,6 +23,7 @@ export 'src/eval/eval_reporter.dart';
 export 'src/eval/eval_result.dart';
 export 'src/eval/eval_runner.dart' show EvalRunner;
 export 'src/eval/eval_scaffolder.dart';
+export 'src/fixing/fixer.dart';
 export 'src/model/finding.dart';
 export 'src/model/skill_document.dart';
 export 'src/parsing/skill_parser.dart';

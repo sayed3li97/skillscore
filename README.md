@@ -181,6 +181,16 @@ The two findings together tell the whole story: `A4` reports the field is gone, 
 
 A full QA record for this rule, every case run against the compiled binary with screenshot evidence, lives in [`docs/qa/a5/`](docs/qa/a5/REPORT.md).
 
+### Fix it automatically with `--fix`
+
+When a finding has a safe, mechanical correction, skillscore marks it `[fixable]` and can apply it in place. A misspelled key is the first such fix: `skillscore <path> --fix` renames `descrption:` to `description:`, then re-scores so the report and the exit code reflect the corrected file.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/shots/fix.png" alt="Before and after: skillscore my-skill/ reports 68 out of 100 grade D with an A4 error and an A5 fixable warning about a misspelled descrption key; then skillscore my-skill/ --fix renames it to description and the skill re-scores 100 out of 100 grade A with no findings" width="82%">
+</p>
+
+One typo drops the skill to a D (the real `description` is missing, so the description rules all fail); `--fix` recovers it to a perfect A. The fix is deterministic and idempotent, preserves your line endings, and only ever touches a key that has a confident "did you mean" match. Keys with no near match (move them under `metadata` yourself) are left untouched, never guessed at.
+
 ## Eval harness
 
 Static linting tells you a skill is well-formed. The eval harness tells you **whether queries actually route to it**, the thing that matters once a skill is deployed. Three commands, one workflow, no API key.
@@ -263,6 +273,7 @@ skillscore --help
 | `--target` | `claude` \| `antigravity` \| `codex` \| `universal` | `universal` | Which guide's ruleset to apply |
 | `--format` | `pretty` \| `json` \| `sarif` | `pretty` | Output format (SARIF renders in code-review tools) |
 | `--min-score <n>` | 0 to 100 | unset | Exit non-zero if any skill scores below `n` |
+| `--fix` | flag | off | Apply safe auto-fixes in place (rename a misspelled key), then re-score |
 | `--strict` | flag | off | Treat warning-level findings as failures |
 | `--quiet` | flag | off | Print only the score line per skill |
 | `--no-color` | flag | off | Disable ANSI colors |

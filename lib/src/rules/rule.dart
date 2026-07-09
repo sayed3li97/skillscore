@@ -63,13 +63,18 @@ abstract class BaseRule implements Rule {
 
   /// Builds a finding for this rule with [defaultSeverity]; the scorer
   /// re-maps severity per target.
-  Finding finding(String message, {int? line, String? fix}) => Finding(
+  ///
+  /// Pass [fix] to override the human-readable fix hint, and [edit] to
+  /// attach a safe, mechanical [FindingFix] that `--fix` can apply.
+  Finding finding(String message, {int? line, String? fix, FindingFix? edit}) =>
+      Finding(
         ruleId: id,
         severity: defaultSeverity,
         message: message,
         fixHint: fix ?? fixHint,
         sourceGuide: sourceGuide,
         line: line,
+        fix: edit,
       );
 
   /// A full-score result with no findings.

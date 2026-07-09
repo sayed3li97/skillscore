@@ -247,19 +247,23 @@ class FrontmatterKeysRule extends BaseRule {
         doc.frontmatter.keys.where((k) => !knownKeys.contains(k)).toList();
     if (unknown.isEmpty) return pass();
 
-    return fail([
-      for (final key in unknown)
-        finding(
-          _messageFor(key),
-          line: doc.frontmatterKeyLines[key] ?? doc.nameLine ?? 1,
-        ),
-    ]);
+    return fail([for (final key in unknown) _findingFor(doc, key)]);
   }
 
-  String _messageFor(String key) {
+  Finding _findingFor(SkillDocument doc, String key) {
     final suggestion = _closestKnownKey(key);
+    final keyLine = doc.frontmatterKeyLines[key];
+    final line = keyLine ?? doc.nameLine ?? 1;
     final base = 'Unknown frontmatter key "$key".';
-    return suggestion == null ? base : '$base Did you mean "$suggestion"?';
+    final message =
+        suggestion == null ? base : '$base Did you mean "$suggestion"?';
+    // A confident suggestion at a known line is a safe, mechanical rename:
+    // attach a fix that `--fix` can apply. Keys with no near match (move
+    // them under "metadata" by hand) stay unfixable.
+    final edit = (suggestion != null && keyLine != null)
+        ? FindingFix(line: keyLine, fromKey: key, toKey: suggestion)
+        : null;
+    return finding(message, line: line, edit: edit);
   }
 
   /// The recognized key closest to [key] within edit distance 2, or null.

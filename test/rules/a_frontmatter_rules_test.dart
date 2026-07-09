@@ -182,5 +182,28 @@ void main() {
       final r = registry.byId('A5_frontmatter_keys')!;
       expect(registry.effectiveSeverity(r, Target.universal), Severity.warning);
     });
+
+    test('attaches a safe fix when the typo has a suggestion', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'descrption: A skill. Use when asked.\n'
+          '---\n';
+      final f = evaluate(rule, manifest).findings.single;
+      expect(f.isFixable, isTrue);
+      expect(f.fix!.fromKey, 'descrption');
+      expect(f.fix!.toKey, 'description');
+      expect(f.fix!.line, 3);
+      expect(f.fix!.summary, 'rename "descrption" to "description"');
+    });
+
+    test('attaches no fix for an unknown key with no near match', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'description: A skill. Use when asked.\n'
+          'author: me\n'
+          '---\n';
+      final f = evaluate(rule, manifest).findings.single;
+      expect(f.isFixable, isFalse);
+    });
   });
 }
