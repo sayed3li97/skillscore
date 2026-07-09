@@ -1,0 +1,28 @@
+# CircleCI: gate skill quality. Copy into .circleci/config.yml.
+version: 2.1
+
+jobs:
+  skillscore:
+    docker:
+      - image: dart:stable
+    steps:
+      - checkout
+      - run: dart pub global activate skillscore
+      - run:
+          name: Score and gate
+          command: |
+            export PATH="$HOME/.pub-cache/bin:$PATH"
+            skillscore skills/ --min-score 80 --no-color
+      - run:
+          name: JSON report
+          when: always
+          command: |
+            export PATH="$HOME/.pub-cache/bin:$PATH"
+            skillscore skills/ --format json --no-color > skillscore.json
+      - store_artifacts:
+          path: skillscore.json
+
+workflows:
+  quality:
+    jobs:
+      - skillscore

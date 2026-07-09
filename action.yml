@@ -1,0 +1,83 @@
+name: skillscore
+description: Lint and score AI agent skills (SKILL.md) against the Claude, Codex, and Antigravity authoring guides.
+author: Sayed Ali Alkamel
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  paths:
+    description: One or more paths (space-separated) to score.
+    required: false
+    default: "."
+  min-score:
+    description: Fail the build if any skill scores below this (0 to 100). Empty means no gate.
+    required: false
+    default: ""
+  target:
+    description: "Rule profile: claude | antigravity | codex | universal."
+    required: false
+    default: universal
+  format:
+    description: "Console output format: pretty | json | sarif."
+    required: false
+    default: pretty
+  strict:
+    description: Treat warning-level findings as failures (true/false).
+    required: false
+    default: "false"
+  version:
+    description: skillscore version to install from pub.dev, or "any" for the latest.
+    required: false
+    default: any
+  sarif-file:
+    description: When set, also write a SARIF 2.1.0 report to this path (feed it to github/codeql-action/upload-sarif).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: dart-lang/setup-dart@v1
+
+    - name: Install skillscore
+      shell: bash
+      env:
+        SS_VERSION: ${{ inputs.version }}
+      run: |
+        if [ "$SS_VERSION" = "any" ]; then
+          dart pub global activate skillscore
+        else
+          dart pub global activate skillscore "$SS_VERSION"
+        fi
+        echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+    # Write the SARIF report first (never gates), so it is always available to
+    # upload even when the gate below fails the job.
+    - name: Write SARIF report
+      if: inputs.sarif-file != ''
+      shell: bash
+      env:
+        SS_PATHS: ${{ inputs.paths }}
+        SS_TARGET: ${{ inputs.target }}
+        SS_SARIF: ${{ inputs.sarif-file }}
+      run: |
+        # shellcheck disable=SC2086
+        skillscore $SS_PATHS --target "$SS_TARGET" --format sarif --no-color > "$SS_SARIF"
+
+    - name: Score and gate
+      shell: bash
+      env:
+        SS_PATHS: ${{ inputs.paths }}
+        SS_TARGET: ${{ inputs.target }}
+        SS_FORMAT: ${{ inputs.format }}
+        SS_MIN: ${{ inputs.min-score }}
+        SS_STRICT: ${{ inputs.strict }}
+      run: |
+        # Build args via an array (values come from env, never interpolated into
+        # the script), so a path can never inject shell.
+        # shellcheck disable=SC2206
+        args=($SS_PATHS --target "$SS_TARGET" --format "$SS_FORMAT" --no-color)
+        [ -n "$SS_MIN" ] && args+=(--min-score "$SS_MIN")
+        [ "$SS_STRICT" = "true" ] && args+=(--strict)
+        skillscore "${args[@]}"

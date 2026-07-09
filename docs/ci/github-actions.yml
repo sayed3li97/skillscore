@@ -1,0 +1,45 @@
+# GitHub Actions: gate skill quality and upload findings to code scanning.
+# Save as .github/workflows/skills.yml in your repo.
+name: skill quality
+
+on: [push, pull_request]
+
+jobs:
+  skillscore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # required to upload SARIF to code scanning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub global activate skillscore
+
+      - name: Score and gate
+        run: skillscore skills/ --min-score 80 --no-color
+
+      # Always produce and upload SARIF, even when the gate above fails, so
+      # findings annotate the pull request under the Security tab.
+      - name: SARIF report
+        if: always()
+        run: skillscore skills/ --format sarif --no-color > skillscore.sarif
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: skillscore.sarif
+
+# ----------------------------------------------------------------------------
+# Shorthand with the reusable composite action (does setup, install, and gate):
+#
+#   - uses: actions/checkout@v4
+#   - uses: sayed3li97/skillscore@v1
+#     with:
+#       paths: skills/
+#       min-score: "80"
+#       sarif-file: skillscore.sarif
+#   - if: always()
+#     uses: github/codeql-action/upload-sarif@v3
+#     with:
+#       sarif_file: skillscore.sarif
+# ----------------------------------------------------------------------------

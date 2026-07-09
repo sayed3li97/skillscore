@@ -1,0 +1,14 @@
+# Bitbucket Pipelines: gate skill quality. Copy into bitbucket-pipelines.yml.
+image: dart:stable
+
+pipelines:
+  default:
+    - step:
+        name: skillscore
+        script:
+          - dart pub global activate skillscore
+          - export PATH="$HOME/.pub-cache/bin:$PATH"
+          - skillscore skills/ --min-score 80 --no-color
+          - skillscore skills/ --format json --no-color > skillscore.json
+        artifacts:
+          - skillscore.json

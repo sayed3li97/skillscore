@@ -1,0 +1,37 @@
+# A complete, working GitHub Actions example: gate on a skill's score and
+# surface every finding in the repository's Security tab via SARIF.
+#
+# This is the workflow used to produce the real run in the CI/CD article.
+# It scores this repo's bundled fixtures; point `paths` at your own skills.
+name: skill lint (demo)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  skillscore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to code scanning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub global activate skillscore
+
+      # Gate: the excellent fixture must score at least 90. Fails the job if not.
+      - name: Score and gate
+        run: skillscore test/fixtures/excellent --min-score 90 --no-color
+
+      # Findings for every fixture (including the intentionally broken one),
+      # emitted as SARIF and uploaded so they annotate the Security tab.
+      - name: SARIF report
+        if: always()
+        run: skillscore test/fixtures --format sarif --no-color > skillscore.sarif
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: skillscore.sarif
+          category: skillscore

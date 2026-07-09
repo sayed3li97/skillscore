@@ -1,0 +1,27 @@
+# Azure Pipelines: gate skill quality. Copy into azure-pipelines.yml.
+trigger:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+container: dart:stable
+
+steps:
+  - script: dart pub global activate skillscore
+    displayName: Install skillscore
+
+  - script: |
+      export PATH="$HOME/.pub-cache/bin:$PATH"
+      skillscore skills/ --min-score 80 --no-color
+    displayName: Score and gate
+
+  - script: |
+      export PATH="$HOME/.pub-cache/bin:$PATH"
+      skillscore skills/ --format json --no-color > "$(Build.ArtifactStagingDirectory)/skillscore.json"
+    displayName: JSON report
+    condition: always()
+
+  - publish: $(Build.ArtifactStagingDirectory)/skillscore.json
+    artifact: skillscore-report
+    condition: always()

@@ -1,0 +1,13 @@
+# Travis CI: gate skill quality. Copy into .travis.yml.
+language: dart
+dart: stable
+
+install:
+  - dart pub global activate skillscore
+  - export PATH="$HOME/.pub-cache/bin:$PATH"
+
+script:
+  - skillscore skills/ --min-score 80 --no-color
+
+after_script:
+  - skillscore skills/ --format json --no-color > skillscore.json || true
