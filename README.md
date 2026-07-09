@@ -255,6 +255,12 @@ Three renderers, one flag. `pretty` (the default) is the colored scorecard; `jso
 
 `--min-score` fails the build when any skill scores below the threshold, `--strict` promotes warnings to failures, and the exit codes are designed for pipelines: `0` all good, `1` a quality gate failed, `2` a usage error.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/cicd.svg" alt="CI/CD diagram: git push to a CI runner that activates skillscore, which runs the --min-score gate, branching to merge on exit 0, code scanning via SARIF, and block on exit 1" width="100%">
+</p>
+
+The same three steps drop into any runner. The **[CI/CD guide](docs/ci/README.md)** has copy-paste configs for ten platforms (GitHub Actions, GitLab CI, CircleCI, Jenkins, Azure Pipelines, Bitbucket, Travis, Drone, Google Cloud Build, and pre-commit), a reusable GitHub Action (`uses: sayed3li97/skillscore@v1`), a pre-commit hook, and a container image, with a real GitHub Actions run and its SARIF findings in the Security tab.
+
 ## Commands and flags
 
 ```text

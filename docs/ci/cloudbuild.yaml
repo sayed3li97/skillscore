@@ -1,0 +1,22 @@
+# Score agent skills on Google Cloud Build.
+#
+#   gcloud builds submit --config docs/ci/cloudbuild.yaml .
+#
+# Cloud Build is ephemeral: the container runs, the build finishes, and nothing
+# persists (free tier covers well over a hundred of these a day). Change the
+# path and threshold for your own skills.
+steps:
+  - name: dart:stable
+    id: skillscore
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        dart pub global activate skillscore
+        export PATH="$$HOME/.pub-cache/bin:$$PATH"
+        skillscore --version
+        skillscore test/fixtures/excellent --min-score 90 --no-color
+
+# Log to Cloud Logging only, so the build needs no logs bucket or extra IAM.
+options:
+  logging: CLOUD_LOGGING_ONLY

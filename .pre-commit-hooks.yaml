@@ -1,0 +1,33 @@
+# pre-commit hook definitions for skillscore.
+# Add to your .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/sayed3li97/skillscore
+#       rev: v0.8.0
+#       hooks:
+#         - id: skillscore
+#           args: ["--no-color", "--min-score", "80"]
+#
+# The `skillscore` hook needs skillscore on PATH
+# (`dart pub global activate skillscore`). The `skillscore-docker` hook needs
+# only Docker and pulls the published image, no Dart required.
+
+- id: skillscore
+  name: skillscore (score SKILL.md)
+  description: Lint and score AI agent skills (SKILL.md) and gate on the score.
+  entry: skillscore
+  args: ["--no-color", "--min-score", "80"]
+  language: system
+  files: (^|/)SKILL\.md$
+  types: [file]
+  pass_filenames: true
+
+- id: skillscore-docker
+  name: skillscore (SKILL.md, Docker)
+  description: Score SKILL.md via the published container image. No Dart needed.
+  entry: ghcr.io/sayed3li97/skillscore
+  args: ["--no-color", "--min-score", "80"]
+  language: docker_image
+  files: (^|/)SKILL\.md$
+  types: [file]
+  pass_filenames: true

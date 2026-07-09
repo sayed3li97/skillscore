@@ -1,0 +1,16 @@
+# pre-commit: gate SKILL.md quality before every commit.
+# Install the framework (pip install pre-commit), drop this in as
+# .pre-commit-config.yaml, then run `pre-commit install`.
+#
+# The `skillscore` hook needs skillscore on PATH:
+#   dart pub global activate skillscore
+# Prefer no local Dart? Use the `skillscore-docker` hook instead (needs Docker).
+repos:
+  - repo: https://github.com/sayed3li97/skillscore
+    rev: v0.8.0
+    hooks:
+      - id: skillscore
+        args: ["--no-color", "--min-score", "80"]
+        # Or, with no Dart install, the container image:
+        # - id: skillscore-docker
+        #   args: ["--no-color", "--min-score", "80"]

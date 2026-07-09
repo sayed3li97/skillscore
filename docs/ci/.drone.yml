@@ -1,0 +1,14 @@
+# Drone CI (and Woodpecker, same schema): gate skill quality.
+# Copy into .drone.yml (Drone) or .woodpecker.yml (Woodpecker).
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: skillscore
+    image: dart:stable
+    commands:
+      - dart pub global activate skillscore
+      - export PATH="$HOME/.pub-cache/bin:$PATH"
+      - skillscore skills/ --min-score 80 --no-color
+      - skillscore skills/ --format json --no-color > skillscore.json

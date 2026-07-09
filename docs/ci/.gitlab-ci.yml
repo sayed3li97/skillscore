@@ -1,0 +1,20 @@
+# GitLab CI/CD: gate skill quality and publish a JSON report artifact.
+# Copy into .gitlab-ci.yml at your repo root.
+skillscore:
+  image: dart:stable
+  script:
+    - dart pub global activate skillscore
+    - export PATH="$HOME/.pub-cache/bin:$PATH"
+    - skillscore skills/ --min-score 80 --no-color
+    - skillscore skills/ --format json --no-color > skillscore.json
+  artifacts:
+    when: always
+    paths:
+      - skillscore.json
+    reports:
+      # GitLab renders CodeClimate-style reports; JSON is kept as a plain artifact.
+      # Swap to `--format sarif` and a `sast` report on Ultimate tiers.
+      codequality: skillscore.json
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
