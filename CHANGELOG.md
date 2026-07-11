@@ -5,6 +5,37 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-07-09
+
+### Added
+
+- **`--fix` auto-remediation:** `skillscore <path> --fix` applies safe,
+  mechanical corrections in place, then re-scores. The first fixer resolves
+  rule A5: when a top-level frontmatter key is a confident "did you mean"
+  match for a recognized key, it renames it (`descrption:` becomes
+  `description:`). Fixes are deterministic and idempotent, preserve line
+  endings and a leading BOM, and only ever touch a key with a near match.
+- Auto-fixable findings now carry a green `[fixable]` marker in the pretty
+  report, so the flag is discoverable.
+- **CI/CD integration kit:** a reusable composite GitHub Action
+  (`uses: sayed3li97/skillscore@v1`), a pre-commit hook
+  (`.pre-commit-hooks.yaml`, system and Docker variants), a `Dockerfile` and
+  a workflow that publishes the image to GHCR on release, and copy-paste
+  configs for ten platforms (GitHub Actions, GitLab CI, CircleCI, Jenkins,
+  Azure Pipelines, Bitbucket, Travis, Drone/Woodpecker, Google Cloud Build,
+  pre-commit) under `docs/ci/`.
+- A detailed [CI/CD guide](docs/ci/README.md) with the universal recipe, the
+  exit-code contract, per-platform configs, the SARIF code-scanning
+  integration, and a real GitHub Actions run whose findings surface in the
+  Security tab.
+
+### Changed
+
+- The pretty reporter's "No findings" line no longer uses an em dash.
+- Documentation: a rewritten README with animated SVG diagrams (pipeline,
+  rubric, targets, eval, CI/CD), a new radial-rubric-ring cover, and premium
+  terminal screenshots.
+
 ## [0.8.0] - 2026-07-04
 
 ### Added
