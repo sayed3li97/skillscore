@@ -46,6 +46,18 @@ skillscore skills/ --format sarif --no-color > skillscore.sarif
 `--no-color` keeps CI logs clean, `--strict` promotes warnings to failures, and
 `--target claude|antigravity|codex|universal` picks the authoring guide.
 
+**Already have a pile of skills?** Do not block the first build on fixing all of
+them. Record today's findings as a baseline once, commit it, and from then on the
+gate fails only on **new** findings while the backlog is burned down at your pace:
+
+```bash
+skillscore skills/ --baseline .skillscore-baseline.json   # once, records the backlog
+skillscore skills/ --baseline .skillscore-baseline.json   # in CI, fails only on regressions
+```
+
+Findings are fingerprinted by `(path, rule)`, so unrelated edits never invalidate
+it; `--update-baseline` re-accepts the current state on purpose.
+
 ## GitHub Actions
 
 The complete workflow: gate on the score, then upload SARIF so findings show up

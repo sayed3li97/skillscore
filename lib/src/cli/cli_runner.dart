@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
+import '../baseline/baseline.dart';
 import '../eval/eval_parser.dart';
 import '../eval/eval_reporter.dart';
 import '../eval/eval_runner.dart';
@@ -50,6 +51,13 @@ Future<int> runCli(List<String> arguments,
         defaultsTo: 'pretty')
     ..addOption('min-score',
         help: 'Exit non-zero if any skill scores below this (CI gating).')
+    ..addOption('baseline',
+        help: 'Gate on NEW findings only, tolerating those recorded in this '
+            'baseline file. The file is created from the current findings if '
+            'it does not exist.')
+    ..addFlag('update-baseline',
+        negatable: false,
+        help: 'Rewrite the --baseline file from the current findings.')
     ..addFlag('strict',
         negatable: false, help: 'Treat warning-level findings as errors.')
     ..addFlag('fix',
@@ -172,8 +180,15 @@ int _score(
   final format = args['format'] as String;
   final strict = args['strict'] as bool;
   final applyFix = args['fix'] as bool;
+  final baselinePath = args['baseline'] as String?;
+  final updateBaseline = args['update-baseline'] as bool;
   final quiet = args['quiet'] as bool;
   final noColor = args['no-color'] as bool;
+
+  if (updateBaseline && baselinePath == null) {
+    err.writeln('Error: --update-baseline requires --baseline <file>.');
+    return exitUsage;
+  }
 
   int? minScore;
   final minScoreRaw = args['min-score'] as String?;
@@ -283,6 +298,47 @@ int _score(
     err.writeln('warning: $warning');
   }
 
+  // --baseline: record the current findings on first use, or gate on only the
+  // findings that are new relative to the recorded baseline.
+  final baselineLines = <String>[];
+  var newFindings = <Finding>[];
+  if (baselinePath != null) {
+    final entries = <String, List<Finding>>{
+      for (final r in results) p.relative(r.doc.manifestPath): r.findings,
+    };
+    final file = File(baselinePath);
+    if (!file.existsSync() || updateBaseline) {
+      final baseline = Baseline.record(entries);
+      file.writeAsStringSync('${baseline.toJson()}\n');
+      baselineLines.add('${updateBaseline ? 'Updated' : 'Wrote'} baseline '
+          '$baselinePath: ${baseline.total} '
+          '${baseline.total == 1 ? 'finding' : 'findings'} accepted. '
+          'New findings will fail future runs.');
+    } else {
+      Baseline baseline;
+      try {
+        baseline = Baseline.parse(file.readAsStringSync());
+      } on FormatException catch (e) {
+        err.writeln('Error: $baselinePath: ${e.message}');
+        return exitUsage;
+      }
+      newFindings = baseline.newFindings(entries);
+      if (newFindings.isEmpty) {
+        baselineLines
+            .add('Baseline: ${baseline.total} accepted, 0 new. Gate clear.');
+      } else {
+        baselineLines.add('Baseline: ${baseline.total} accepted, '
+            '${newFindings.length} '
+            '${newFindings.length == 1 ? 'finding is' : 'findings are'} '
+            'new (fails the gate):');
+        for (final f in newFindings) {
+          final loc = f.line == null ? '' : 'line ${f.line}  ';
+          baselineLines.add('  ${f.ruleId}  $loc${f.message}');
+        }
+      }
+    }
+  }
+
   if (fixSummary.isNotEmpty && format != 'json' && format != 'sarif') {
     out.writeln('Fixed ${fixSummary.length} '
         '${fixSummary.length == 1 ? 'issue' : 'issues'}:');
@@ -301,11 +357,24 @@ int _score(
       out.write(PrettyReporter(color: !noColor, quiet: quiet).report(results));
   }
 
+  if (baselineLines.isNotEmpty && format != 'json' && format != 'sarif') {
+    for (final line in baselineLines) {
+      out.writeln(line);
+    }
+    out.writeln();
+  }
+
   var failed = false;
   if (minScore != null) {
     failed = results.any((r) => r.score < minScore!);
   }
-  if (strict) {
+  if (baselinePath != null) {
+    // The baseline is the findings gate: fail only on findings that are new
+    // since it was recorded (none right after writing it). This is what lets a
+    // strict, no-regressions gate be switched on over an existing backlog, so
+    // it supersedes --strict here rather than stacking with it.
+    failed = failed || newFindings.isNotEmpty;
+  } else if (strict) {
     failed = failed ||
         results.any((r) =>
             r.hasSeverity(Severity.error) || r.hasSeverity(Severity.warning));

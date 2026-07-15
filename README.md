@@ -279,12 +279,28 @@ skillscore --help
 | `--target` | `claude` \| `antigravity` \| `codex` \| `universal` | `universal` | Which guide's ruleset to apply |
 | `--format` | `pretty` \| `json` \| `sarif` | `pretty` | Output format (SARIF renders in code-review tools) |
 | `--min-score <n>` | 0 to 100 | unset | Exit non-zero if any skill scores below `n` |
+| `--baseline <file>` | path | unset | Gate on new findings only; tolerate the recorded backlog. Created if missing |
+| `--update-baseline` | flag | off | Rewrite the `--baseline` file from the current findings |
 | `--fix` | flag | off | Apply safe auto-fixes in place (rename a misspelled key), then re-score |
 | `--strict` | flag | off | Treat warning-level findings as failures |
 | `--quiet` | flag | off | Print only the score line per skill |
 | `--no-color` | flag | off | Disable ANSI colors |
 
 **Exit codes:** `0` every skill met the gate. `1` a skill is below `--min-score`, or `--strict` found an error or warning, or an eval run failed. `2` a usage error (bad path, unreadable file, unknown rule, invalid flag).
+
+### Adopt the gate on an existing fleet with `--baseline`
+
+Turning a strict gate on a repo that already has dozens of skills is all-or-nothing without a way to grandfather the current state. `--baseline` is that way (the same idea as ESLint bulk suppressions and Ruff's baseline):
+
+```bash
+# Once: record today's findings as the accepted backlog (exits 0)
+skillscore skills/ --baseline .skillscore-baseline.json
+
+# In CI: fail only when a NEW finding appears, backlog tolerated
+skillscore skills/ --baseline .skillscore-baseline.json
+```
+
+Findings are fingerprinted by `(path, rule)`, so fixing an unrelated line never invalidates the baseline. Commit the file, and from that point the build fails on regressions while the backlog is burned down at your own pace. `--update-baseline` re-accepts the current state after you have intentionally taken on new findings. The score itself is never changed; pair it with `--min-score` if you also want a score floor.
 
 ## Editor integration
 
