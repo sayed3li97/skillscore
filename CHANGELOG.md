@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-07-14
+
+### Added
+
+- **`--baseline <file>`:** adopt a strict CI gate on a fleet that already has
+  findings, without fixing everything first (the idea behind ESLint bulk
+  suppressions and Ruff's baseline). On first use it records the current
+  findings to the file and exits 0; on later runs the gate fails only on
+  findings that are **new** since the baseline was recorded. Findings are
+  fingerprinted by `(relative path, rule id)`, so unrelated line shifts never
+  invalidate the baseline, and info-level findings are out of scope. When a
+  baseline is present it is the findings gate (it supersedes `--strict`) and the
+  score is never changed, so pair it with `--min-score` for a score floor.
+- **`--update-baseline`:** rewrite the baseline from the current findings after
+  intentionally taking on new ones.
+
 ## [0.9.0] - 2026-07-09
 
 ### Added
