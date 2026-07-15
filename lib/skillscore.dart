@@ -13,6 +13,7 @@
 /// ```
 library;
 
+export 'src/baseline/baseline.dart';
 export 'src/cli/cli_runner.dart' show exitFailedGate, exitOk, exitUsage, runCli;
 export 'src/eval/eval_api_client.dart' show EvalApiClient, TriggerCheckResult;
 export 'src/eval/eval_document.dart';

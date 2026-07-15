@@ -334,4 +334,106 @@ void main() {
       }
     });
   });
+
+  group('--baseline', () {
+    // A skill with several findings and a low score.
+    const weak = '---\n'
+        'name: csv-to-xlsx\n'
+        'description: A spreadsheet helper that converts CSV into XLSX.\n'
+        '---\n\n# CSV to XLSX\n\nCSV is a widely used data format.\n';
+
+    Directory tempSkills(String manifest) {
+      final dir = Directory.systemTemp.createTempSync('sk_base_');
+      Directory('${dir.path}/skills/weak').createSync(recursive: true);
+      File('${dir.path}/skills/weak/SKILL.md').writeAsStringSync(manifest);
+      return dir;
+    }
+
+    test('bootstraps a baseline and does not fail on the backlog', () async {
+      final dir = tempSkills(weak);
+      try {
+        final base = '${dir.path}/base.json';
+        final result = await run([
+          '${dir.path}/skills',
+          '--baseline',
+          base,
+          '--strict',
+          '--no-color'
+        ]);
+        expect(result.code, exitOk, reason: result.out + result.err);
+        expect(result.out, contains('Wrote baseline'));
+        expect(File(base).existsSync(), isTrue);
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('a clean re-run against the baseline passes even with --strict',
+        () async {
+      final dir = tempSkills(weak);
+      try {
+        final base = '${dir.path}/base.json';
+        await run(['${dir.path}/skills', '--baseline', base, '--no-color']);
+        final result = await run([
+          '${dir.path}/skills',
+          '--baseline',
+          base,
+          '--strict',
+          '--no-color'
+        ]);
+        expect(result.code, exitOk);
+        expect(result.out, contains('0 new'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('a new finding fails the gate', () async {
+      final dir = tempSkills(weak);
+      try {
+        final base = '${dir.path}/base.json';
+        await run(['${dir.path}/skills', '--baseline', base, '--no-color']);
+        // Introduce a backslash path: a new F2 finding.
+        File('${dir.path}/skills/weak/SKILL.md')
+            .writeAsStringSync('${weak}See C:\\data\\out.xlsx.\n');
+        final result =
+            await run(['${dir.path}/skills', '--baseline', base, '--no-color']);
+        expect(result.code, exitFailedGate);
+        expect(result.out, contains('new'));
+        expect(result.out, contains('F2_forward_slashes'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('--update-baseline re-accepts the current findings', () async {
+      final dir = tempSkills(weak);
+      try {
+        final base = '${dir.path}/base.json';
+        await run(['${dir.path}/skills', '--baseline', base, '--no-color']);
+        File('${dir.path}/skills/weak/SKILL.md')
+            .writeAsStringSync('${weak}See C:\\data\\out.xlsx.\n');
+        final updated = await run([
+          '${dir.path}/skills',
+          '--baseline',
+          base,
+          '--update-baseline',
+          '--no-color',
+        ]);
+        expect(updated.code, exitOk);
+        final after =
+            await run(['${dir.path}/skills', '--baseline', base, '--no-color']);
+        expect(after.code, exitOk);
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('--update-baseline without --baseline is a usage error', () async {
+      final result = await run(
+          [fixture('excellent/pdf-form-filler'), '--update-baseline']);
+      expect(result.code, exitUsage);
+      expect(result.err, contains('requires --baseline'));
+    });
+  });
 }
