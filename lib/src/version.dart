@@ -3,4 +3,4 @@
 /// The current version of the skillscore package.
 ///
 /// Keep in sync with `pubspec.yaml`.
-const String packageVersion = '0.9.0';
+const String packageVersion = '0.10.0';
