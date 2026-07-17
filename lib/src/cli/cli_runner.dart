@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
+import '../analysis/conflicts.dart';
 import '../baseline/baseline.dart';
 import '../eval/eval_parser.dart';
 import '../eval/eval_reporter.dart';
@@ -58,6 +60,9 @@ Future<int> runCli(List<String> arguments,
     ..addFlag('update-baseline',
         negatable: false,
         help: 'Rewrite the --baseline file from the current findings.')
+    ..addOption('max-overlap',
+        help: '(conflicts) Flag skill pairs whose trigger overlap is at least '
+            'this (0.0 to 1.0); exit non-zero when any pair meets it.')
     ..addFlag('strict',
         negatable: false, help: 'Treat warning-level findings as errors.')
     ..addFlag('fix',
@@ -113,6 +118,9 @@ Future<int> runCli(List<String> arguments,
   if (rest.first == 'eval') {
     return _evalCommand(rest.sublist(1), args, stdoutSink, stderrSink);
   }
+  if (rest.first == 'conflicts') {
+    return _conflicts(rest.sublist(1), args, stdoutSink, stderrSink);
+  }
 
   return _score(args, registry, stdoutSink, stderrSink);
 }
@@ -127,6 +135,7 @@ Usage:
   skillscore eval init <path>          Scaffold evals.json next to SKILL.md
   skillscore eval validate <path>      Validate an existing evals.json
   skillscore eval run <path>           Run trigger-rate evals (offline, no API key)
+  skillscore conflicts <path> ...      Find skills whose descriptions trigger on the same requests
   skillscore --version
 
 Options:
@@ -380,6 +389,135 @@ int _score(
             r.hasSeverity(Severity.error) || r.hasSeverity(Severity.warning));
   }
   return failed ? exitFailedGate : exitOk;
+}
+
+// ---------------------------------------------------------------------------
+// conflicts subcommand
+// ---------------------------------------------------------------------------
+
+int _conflicts(
+    List<String> paths, ArgResults args, StringSink out, StringSink err) {
+  final format = args['format'] as String;
+  final noColor = args['no-color'] as bool;
+
+  double? maxOverlap;
+  final rawMax = args['max-overlap'] as String?;
+  if (rawMax != null) {
+    maxOverlap = double.tryParse(rawMax);
+    if (maxOverlap == null || maxOverlap < 0 || maxOverlap > 1) {
+      err.writeln(
+          'Error: --max-overlap must be a number 0.0 to 1.0 (got "$rawMax").');
+      return exitUsage;
+    }
+  }
+
+  if (paths.isEmpty) {
+    err.writeln('Error: "conflicts" needs one or more paths, '
+        'e.g. skillscore conflicts skills/');
+    return exitUsage;
+  }
+
+  final skillParser = SkillParser();
+  final warnings = <String>[];
+  final seen = <String>{};
+  final manifests = <String>[];
+  for (final path in paths) {
+    try {
+      for (final m in skillParser.discoverManifests(path, warnings: warnings)) {
+        if (seen.add(m)) manifests.add(m);
+      }
+    } on SkillInputException catch (e) {
+      warnings.add('$path: ${e.message}');
+    }
+  }
+  manifests.sort();
+
+  final entries = <SkillEntry>[];
+  for (final manifest in manifests) {
+    try {
+      final doc = skillParser.parseFile(manifest);
+      warnings.addAll(doc.parseWarnings);
+      entries.add(SkillEntry(
+        name: doc.displayName,
+        path: doc.manifestPath,
+        description: doc.description ?? '',
+      ));
+    } on SkillInputException catch (e) {
+      warnings.add('Skipping $manifest: ${e.message}');
+    }
+  }
+
+  for (final warning in warnings) {
+    err.writeln('warning: $warning');
+  }
+
+  final threshold = maxOverlap ?? 0.5;
+  final conflicts = ConflictDetector(threshold: threshold).analyze(entries);
+
+  if (format == 'json') {
+    out.writeln(_conflictsJson(entries.length, threshold, conflicts));
+  } else {
+    _printConflicts(out, entries.length, threshold, conflicts, !noColor);
+  }
+
+  // Gate only when --max-overlap was explicitly requested.
+  if (maxOverlap != null && conflicts.isNotEmpty) return exitFailedGate;
+  return exitOk;
+}
+
+String _pct(double v) => '${(v * 100).round()}%';
+
+void _printConflicts(StringSink out, int count, double threshold,
+    List<SkillConflict> conflicts, bool color) {
+  String paint(String s, String code) => color ? '\x1B[${code}m$s\x1B[0m' : s;
+
+  if (count < 2) {
+    out.writeln('Need at least two skills to compare; found $count.');
+    return;
+  }
+  if (conflicts.isEmpty) {
+    out.writeln(paint(
+        'No overlapping skills at or above ${_pct(threshold)} trigger '
+            'overlap. $count skills compared.',
+        '32'));
+    return;
+  }
+  out.writeln('${conflicts.length} overlapping '
+      '${conflicts.length == 1 ? 'pair' : 'pairs'} '
+      '(>= ${_pct(threshold)} trigger overlap) across $count skills:');
+  out.writeln();
+  for (final c in conflicts) {
+    out.writeln('  ${paint(c.a.name, '1')}  <->  ${paint(c.b.name, '1')}   '
+        '${paint('${_pct(c.overlap)} overlap', '33')}');
+    out.writeln('    shared triggers: ${c.shared.join(', ')}');
+    if (!c.bothBounded) {
+      final target = c.aHasBoundary ? c.b.name : c.a.name;
+      out.writeln('    ${paint('fix:', '2')} add a "do not use for ..." '
+          'boundary to $target so the agent can tell them apart.');
+    }
+    out.writeln();
+  }
+}
+
+String _conflictsJson(
+    int count, double threshold, List<SkillConflict> conflicts) {
+  return const JsonEncoder.withIndent('  ').convert({
+    'tool': {'name': 'skillscore', 'subcommand': 'conflicts'},
+    'skillCount': count,
+    'threshold': threshold,
+    'conflicts': [
+      for (final c in conflicts)
+        {
+          'a': c.a.name,
+          'aPath': c.a.path,
+          'b': c.b.name,
+          'bPath': c.b.path,
+          'overlap': double.parse(c.overlap.toStringAsFixed(4)),
+          'shared': c.shared,
+          'bothBounded': c.bothBounded,
+        },
+    ],
+  });
 }
 
 // ---------------------------------------------------------------------------

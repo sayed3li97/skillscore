@@ -241,6 +241,33 @@ All text is lowercased, tokenized, stop-word filtered, and suffix-stemmed before
 
 </details>
 
+## Find overlapping skills with `conflicts`
+
+An agent picks which skill to load by matching a request against every skill's
+`description`. So the moment two skills describe themselves with the same words,
+they compete for the same requests and the agent loads the wrong one, silently.
+It is the most common reason a skill "does not trigger," and no other linter
+looks for it.
+
+`skillscore conflicts` does. It compares the **trigger surface** (the `use when`
+clause plus the opening sentence) of every pair of skills in a folder and flags
+the pairs that overlap, with the exact shared words:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/shots/conflicts.png" alt="Terminal: skillscore conflicts skills/ finds one overlapping pair across 4 skills, pdf-form-filler and pdf-populate at 75 percent overlap, with shared triggers data, field, fill, form, pdf, populate, and a fix hint to add a do-not-use boundary" width="88%">
+</p>
+
+```bash
+skillscore conflicts skills/                      # report (advisory, exits 0)
+skillscore conflicts skills/ --max-overlap 0.6    # CI gate: exit 1 on a pair >= 0.6
+skillscore conflicts skills/ --format json        # machine-readable pairs
+```
+
+The fix it points you at is the one the authoring guides recommend: give each
+skill a specific, non-overlapping trigger and an explicit "do not use for ..."
+boundary so the agent can tell them apart. It is fully offline and
+deterministic, and reuses the same term extraction as the eval harness.
+
 ## Output formats and CI
 
 Three renderers, one flag. `pretty` (the default) is the colored scorecard; `json` is a stable machine shape for dashboards; `sarif` is a valid SARIF 2.1.0 document that GitHub code scanning renders as inline PR annotations.
@@ -270,6 +297,7 @@ skillscore explain <rule-id>       Print a rule's rationale, the fix, and its so
 skillscore eval init <path>        Scaffold evals.json from the skill's description
 skillscore eval validate <path>    Validate and summarize evals.json
 skillscore eval run <path>         Run trigger-rate evals offline (no API key)
+skillscore conflicts <path> ...    Find skills that trigger on the same requests
 skillscore --version
 skillscore --help
 ```
