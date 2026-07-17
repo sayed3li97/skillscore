@@ -436,4 +436,84 @@ void main() {
       expect(result.err, contains('requires --baseline'));
     });
   });
+
+  group('conflicts command', () {
+    Directory twoPdfSkills() {
+      final dir = Directory.systemTemp.createTempSync('sk_conf_');
+      Directory('${dir.path}/a').createSync();
+      Directory('${dir.path}/b').createSync();
+      Directory('${dir.path}/c').createSync();
+      File('${dir.path}/a/SKILL.md').writeAsStringSync('---\n'
+          'name: pdf-filler\n'
+          'description: Fills PDF forms. Use when the user asks to fill a PDF form with data.\n'
+          '---\n# a\n');
+      File('${dir.path}/b/SKILL.md').writeAsStringSync('---\n'
+          'name: pdf-writer\n'
+          'description: Writes PDF forms. Use when the user wants to fill a PDF form from data.\n'
+          '---\n# b\n');
+      File('${dir.path}/c/SKILL.md').writeAsStringSync('---\n'
+          'name: weather\n'
+          'description: Reports the weather. Use when the user asks about rain today.\n'
+          '---\n# c\n');
+      return dir;
+    }
+
+    test('reports an overlapping pair and exits 0 (advisory)', () async {
+      final dir = twoPdfSkills();
+      try {
+        final result = await run(['conflicts', dir.path, '--no-color']);
+        expect(result.code, exitOk);
+        expect(result.out, contains('overlapping'));
+        expect(result.out, contains('pdf-filler'));
+        expect(result.out, contains('pdf-writer'));
+        expect(result.out, contains('shared triggers'));
+        expect(result.out, isNot(contains('weather')));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('--max-overlap gates the exit code', () async {
+      final dir = twoPdfSkills();
+      try {
+        final result = await run(
+            ['conflicts', dir.path, '--max-overlap', '0.5', '--no-color']);
+        expect(result.code, exitFailedGate);
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('--format json emits parseable conflicts', () async {
+      final dir = twoPdfSkills();
+      try {
+        final result = await run(['conflicts', dir.path, '--format', 'json']);
+        expect(result.code, exitOk);
+        final decoded = jsonDecode(result.out) as Map<String, dynamic>;
+        expect(decoded['skillCount'], 3);
+        expect(decoded['conflicts'], hasLength(1));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('no path is a usage error', () async {
+      final result = await run(['conflicts']);
+      expect(result.code, exitUsage);
+      expect(result.err, contains('needs one or more paths'));
+    });
+
+    test('invalid --max-overlap is a usage error', () async {
+      final result =
+          await run(['conflicts', fixture(''), '--max-overlap', '5']);
+      expect(result.code, exitUsage);
+    });
+
+    test('a single skill reports nothing to compare', () async {
+      final result = await run(
+          ['conflicts', fixture('excellent/pdf-form-filler'), '--no-color']);
+      expect(result.code, exitOk);
+      expect(result.out, contains('at least two'));
+    });
+  });
 }

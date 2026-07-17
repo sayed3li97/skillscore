@@ -13,6 +13,8 @@
 /// ```
 library;
 
+export 'src/analysis/conflicts.dart';
+export 'src/analysis/skill_terms.dart';
 export 'src/baseline/baseline.dart';
 export 'src/cli/cli_runner.dart' show exitFailedGate, exitOk, exitUsage, runCli;
 export 'src/eval/eval_api_client.dart' show EvalApiClient, TriggerCheckResult;
