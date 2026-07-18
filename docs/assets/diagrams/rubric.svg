@@ -37,8 +37,8 @@
     <text class="bl" x="59" y="143" text-anchor="middle">A</text>
     <text class="name" x="88" y="143">Frontmatter validity</text>
     <rect class="track" x="470" y="128" width="520" height="18" rx="9"/>
-    <rect class="fill f1" x="470" y="128" width="316" height="18" rx="9"/>
-    <text class="pts" x="1108" y="142" text-anchor="end">17 pts</text>
+    <rect class="fill f1" x="470" y="128" width="353" height="18" rx="9"/>
+    <text class="pts" x="1108" y="142" text-anchor="end">19 pts</text>
   </g>
   <!-- B -->
   <g class="row r2">

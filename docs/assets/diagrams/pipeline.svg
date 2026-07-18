@@ -70,7 +70,7 @@
   <g class="g d3">
     <rect class="node" x="470" y="188" width="230" height="126" rx="12"/>
     <text class="lbl" x="585" y="232" text-anchor="middle">Rule engine</text>
-    <text class="sub" x="585" y="258" text-anchor="middle">26 rules across 7 categories</text>
+    <text class="sub" x="585" y="258" text-anchor="middle">27 rules across 7 categories</text>
     <text class="sub" x="585" y="280" text-anchor="middle" fill="#59626f">A B C D E F &#183; G penalty</text>
   </g>
 
