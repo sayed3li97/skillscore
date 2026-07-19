@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>skillscore playground — score a SKILL.md in your browser</title>
+<meta name="description" content="Paste a SKILL.md and get its 0-100 quality score, grade, token budget, and findings — scored against the Claude, Codex, and Antigravity guides. Runs entirely in your browser, nothing is uploaded.">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #0b0f14; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --a: #3fb950; --b: #58a6ff; --c: #d29922; --d: #db6d28; --f: #f85149;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--mono); font-size: 14px; line-height: 1.5;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header {
+    padding: 22px 24px 16px; border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: -0.3px; }
+  header h1 .accent { color: var(--accent); }
+  header p { margin: 6px 0 0; color: var(--muted); max-width: 70ch; }
+  header .links { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 0; height: calc(100vh - 108px); min-height: 480px; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; height: auto; } }
+  .pane { display: flex; flex-direction: column; min-width: 0; }
+  .pane.editor { border-right: 1px solid var(--border); }
+  .toolbar {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--panel);
+  }
+  .toolbar label { color: var(--muted); font-size: 12px; }
+  select, button {
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 10px; cursor: pointer;
+  }
+  button:hover, select:hover { border-color: var(--accent); }
+  .toolbar .spacer { flex: 1; }
+  textarea {
+    flex: 1; width: 100%; resize: none; border: 0; outline: 0;
+    background: var(--panel2); color: var(--text);
+    font-family: var(--mono); font-size: 13px; line-height: 1.55; padding: 14px;
+    min-height: 320px; tab-size: 2;
+  }
+  .results { flex: 1; overflow-y: auto; padding: 16px 18px; }
+  .scorecard { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .badge {
+    width: 92px; height: 92px; border-radius: 50%; flex: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 3px solid var(--accent); background: var(--panel);
+  }
+  .badge .num { font-size: 26px; font-weight: 700; line-height: 1; }
+  .badge .grade { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .scoremeta h2 { margin: 0 0 2px; font-size: 16px; }
+  .scoremeta .name { color: var(--accent); }
+  .scoremeta .sub { color: var(--muted); font-size: 12px; }
+  .section-title { text-transform: uppercase; letter-spacing: 0.6px; font-size: 11px; color: var(--muted); margin: 18px 0 8px; }
+  .cat { display: grid; grid-template-columns: 1.7fr 62px 1fr; gap: 10px; align-items: center; margin: 5px 0; }
+  .cat .clabel { color: var(--text); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat .cpts { color: var(--muted); font-size: 12px; text-align: right; }
+  .bar { height: 8px; background: var(--panel2); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+  .tokens { display: flex; gap: 22px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+  .tokens b { color: var(--text); font-weight: 600; }
+  .finding { border: 1px solid var(--border); border-left-width: 3px; border-radius: 6px; padding: 9px 11px; margin: 8px 0; background: var(--panel); }
+  .finding.error { border-left-color: var(--f); }
+  .finding.warning { border-left-color: var(--c); }
+  .finding.info { border-left-color: var(--muted); }
+  .finding .top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .finding .rule { color: var(--accent); font-weight: 600; }
+  .finding .sev { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted); }
+  .finding .loc { color: var(--muted); font-size: 12px; }
+  .finding .msg { margin: 5px 0 0; }
+  .finding .fix { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+  .finding .fix b { color: var(--a); }
+  .clean { color: var(--a); padding: 14px 0; }
+  .empty { color: var(--muted); padding: 30px 0; text-align: center; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--accent); color: var(--text); padding: 8px 14px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="accent">skillscore</span> playground</h1>
+  <p>Paste a <code>SKILL.md</code> and get its 0-100 quality score, grade, token budget, and findings, scored against the Claude, Codex, and Antigravity authoring guides. Everything runs in your browser with the real scorer compiled to JavaScript. Nothing is uploaded.</p>
+  <div class="links">
+    <a href="https://github.com/sayed3li97/skillscore">GitHub</a> ·
+    <a href="https://pub.dev/packages/skillscore">pub.dev</a> ·
+    <a href="https://www.npmjs.com/package/skillscore">npm</a> ·
+    <code>npx skillscore path/to/skills/</code>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="pane editor">
+    <div class="toolbar">
+      <label for="target">Guide</label>
+      <select id="target">
+        <option value="universal" selected>universal</option>
+        <option value="claude">claude</option>
+        <option value="codex">codex</option>
+        <option value="antigravity">antigravity</option>
+      </select>
+      <div class="spacer"></div>
+      <button id="sample" title="Load an example SKILL.md">Load sample</button>
+      <button id="share" title="Copy a link that reopens this manifest">Copy link</button>
+    </div>
+    <textarea id="input" spellcheck="false" placeholder="Paste your SKILL.md here…"></textarea>
+  </div>
+
+  <div class="pane">
+    <div class="toolbar"><span class="section-title" style="margin:0">Result</span></div>
+    <div class="results" id="results">
+      <div class="empty">Paste a SKILL.md on the left to see its score.</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script defer src="main.dart.js"></script>
+</body>
+</html>

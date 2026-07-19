@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import 'dart:io';
-
 import 'package:path/path.dart' as p;
 
 import '../model/finding.dart';
 import '../model/skill_document.dart';
+// Reading a linked file needs a filesystem, which the web build lacks; the
+// conditional import swaps in a stub that returns null there.
+import 'file_reader_stub.dart' if (dart.library.io) 'file_reader_io.dart';
 import 'rule.dart';
 
 final RegExp _mdLink = RegExp(r'\[[^\]]*\]\(([^)#][^)]*)\)');
@@ -96,14 +97,8 @@ class OneLevelLinksRule extends BaseRule {
       for (final link in _localMarkdownLinks(doc.bodyLines[i])) {
         final targetPath = p.normalize(p.join(doc.skillRoot, link));
         if (!seen.add(targetPath)) continue;
-        final file = File(targetPath);
-        if (!file.existsSync()) continue;
-        String content;
-        try {
-          content = file.readAsStringSync();
-        } on FileSystemException {
-          continue;
-        }
+        final content = readLocalFileSync(targetPath);
+        if (content == null) continue;
         final onward = _localMarkdownLinks(content);
         if (onward.isNotEmpty) {
           findings.add(finding(
