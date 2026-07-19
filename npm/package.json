@@ -1,0 +1,40 @@
+{
+  "name": "skillscore",
+  "version": "0.10.0",
+  "description": "Lint and score AI agent skills (SKILL.md) against the official Claude, Codex, and Antigravity authoring guides. Offline, deterministic CLI.",
+  "keywords": [
+    "agent-skills",
+    "skill-md",
+    "linter",
+    "claude",
+    "ai-agents",
+    "codex",
+    "antigravity"
+  ],
+  "homepage": "https://github.com/sayed3li97/skillscore#readme",
+  "bugs": "https://github.com/sayed3li97/skillscore/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sayed3li97/skillscore.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Sayed Ali Alkamel",
+  "type": "commonjs",
+  "bin": {
+    "skillscore": "bin/skillscore.js"
+  },
+  "files": [
+    "bin/skillscore.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "optionalDependencies": {
+    "@skillscore/cli-darwin-x64": "0.10.0",
+    "@skillscore/cli-darwin-arm64": "0.10.0",
+    "@skillscore/cli-linux-x64": "0.10.0",
+    "@skillscore/cli-linux-arm64": "0.10.0",
+    "@skillscore/cli-win32-x64": "0.10.0"
+  }
+}

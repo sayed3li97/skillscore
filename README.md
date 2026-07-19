@@ -6,6 +6,7 @@
 
 [![CI](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml/badge.svg)](https://github.com/sayed3li97/skillscore/actions/workflows/ci.yml)
 [![pub package](https://img.shields.io/pub/v/skillscore.svg)](https://pub.dev/packages/skillscore)
+[![npm](https://img.shields.io/npm/v/skillscore?label=npm&color=red)](https://www.npmjs.com/package/skillscore)
 [![VS Marketplace](https://img.shields.io/visual-studio-marketplace/v/sayed-ali-alkamel.skillscore?label=VS%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore)
 [![Open VSX](https://img.shields.io/open-vsx/v/sayed-ali-alkamel/skillscore?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -35,8 +36,12 @@ The parser reads the frontmatter and body, the rule engine runs 26 checks groupe
 ## Quickstart
 
 ```bash
-# Install
-dart pub global activate skillscore
+# Run it with no install (Node) — no Dart toolchain needed
+npx skillscore path/to/skills/
+
+# Or install the CLI, whichever ecosystem you prefer
+npm install -g skillscore          # npm (prebuilt binary)
+dart pub global activate skillscore # pub.dev (from source)
 
 # Score a single skill (any name, any location)
 skillscore path/to/SKILL.md

@@ -1,0 +1,79 @@
+name: Publish to npm
+
+# Builds one native binary per platform (Dart cannot cross-compile, so each
+# needs its own runner), then publishes the per-platform optional packages
+# followed by the main `skillscore` launcher package.
+#
+# Trigger: dispatched by release.yml against the new v<version> tag (the same
+# pattern used for pub.dev — tags created with GITHUB_TOKEN do not fire `push`
+# listeners, so the dispatch is the reliable path). Also runs on a manually
+# pushed v* tag and on manual workflow_dispatch.
+#
+# Requires an `NPM_TOKEN` repository secret (an npm automation token with
+# publish rights to `skillscore` and the `@skillscore` scope).
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: darwin, cpu: x64,   runner: macos-13,        exe: skillscore }
+          - { os: darwin, cpu: arm64, runner: macos-14,        exe: skillscore }
+          - { os: linux,  cpu: x64,   runner: ubuntu-latest,   exe: skillscore }
+          - { os: linux,  cpu: arm64, runner: ubuntu-24.04-arm, exe: skillscore }
+          - { os: win32,  cpu: x64,   runner: windows-latest,  exe: skillscore.exe }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - name: Compile native binary
+        run: dart compile exe bin/skillscore.dart -o ${{ matrix.exe }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.os }}-${{ matrix.cpu }}
+          path: ${{ matrix.exe }}
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          path: npm/_dl
+      - name: Arrange binaries into npm/artifacts/<os>-<cpu>/
+        run: |
+          set -e
+          for d in npm/_dl/binary-*; do
+            oscpu="$(basename "$d" | sed 's/^binary-//')"   # e.g. darwin-arm64
+            mkdir -p "npm/artifacts/$oscpu"
+            cp "$d"/* "npm/artifacts/$oscpu/"
+          done
+      - name: Assemble packages (stamps versions from pubspec.yaml)
+        run: node npm/build.mjs
+      - name: Publish platform packages, then the launcher
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -e
+          # Optional binary packages must exist before the main package that
+          # lists them, so publish the scoped ones first.
+          for pkg in npm/dist/@skillscore/*/; do
+            ( cd "$pkg" && npm publish --access public )
+          done
+          ( cd npm/dist/skillscore && npm publish --access public )

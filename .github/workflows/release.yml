@@ -97,3 +97,14 @@ jobs:
           # rejected ("publishing is only allowed from 'tag' refType").
           gh workflow run publish.yml --ref "${{ steps.version.outputs.tag }}"
           echo "Dispatched publish.yml against ${{ steps.version.outputs.tag }}"
+
+      - name: Trigger npm publish workflow
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Same reasoning as the pub.dev dispatch above: the GITHUB_TOKEN tag
+          # does not fire push listeners, so kick npm-publish.yml explicitly
+          # against the tag ref.
+          gh workflow run npm-publish.yml --ref "${{ steps.version.outputs.tag }}"
+          echo "Dispatched npm-publish.yml against ${{ steps.version.outputs.tag }}"

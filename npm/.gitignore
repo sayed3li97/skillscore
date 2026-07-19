@@ -1,0 +1,3 @@
+# Build outputs assembled by build.mjs in CI; never committed.
+dist/
+artifacts/
