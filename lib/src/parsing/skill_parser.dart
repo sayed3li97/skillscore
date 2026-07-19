@@ -3,9 +3,9 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:yaml/yaml.dart';
 
 import '../model/skill_document.dart';
+import 'skill_parser_core.dart';
 
 /// Thrown for usage-level problems: bad paths, unreadable or binary
 /// input. The CLI maps this to exit code 2.
@@ -111,98 +111,18 @@ class SkillParser {
     return parseContent(content, manifestPath: manifestPath);
   }
 
-  /// Parses raw [content] as a manifest located at [manifestPath].
+  /// Parses raw [content] as a manifest located at [manifestPath], reading
+  /// any side folders (`references/`, `examples/`, `scripts/`, `assets/`) that
+  /// exist next to it from disk.
   ///
-  /// Handles a UTF-8 BOM and both `\n` and `\r\n` line endings without
-  /// corrupting reported line numbers. Missing or malformed frontmatter
-  /// never throws; rules report it as findings instead.
+  /// The pure text parsing lives in [parseSkillContent] (no `dart:io`, so it
+  /// compiles to JS/Wasm); this wrapper adds the on-disk side files.
   SkillDocument parseContent(String content, {required String manifestPath}) {
-    var text = content;
-    if (text.startsWith('\uFEFF')) text = text.substring(1);
-    final lines = text.split(RegExp(r'\r\n|\r|\n'));
-
-    var hasDelimiters = false;
-    var valid = false;
-    String? error;
-    var frontmatter = <String, Object?>{};
-    var bodyStartLine = 1;
-    int? nameLine;
-    int? descriptionLine;
-    final keyLines = <String, int>{};
-
-    if (lines.isNotEmpty && lines.first.trim() == '---') {
-      var close = -1;
-      for (var i = 1; i < lines.length; i++) {
-        if (lines[i].trim() == '---') {
-          close = i;
-          break;
-        }
-      }
-      if (close > 0) {
-        hasDelimiters = true;
-        final yamlText = lines.sublist(1, close).join('\n');
-        try {
-          final parsed = loadYaml(yamlText);
-          if (parsed is YamlMap) {
-            frontmatter = <String, Object?>{
-              for (final entry in parsed.entries)
-                entry.key.toString(): entry.value,
-            };
-            valid = true;
-          } else if (parsed == null) {
-            error = 'Frontmatter block is empty.';
-          } else {
-            error = 'Frontmatter is not a YAML map.';
-          }
-        } on YamlException catch (e) {
-          error = 'Malformed YAML frontmatter: ${e.message}';
-        }
-        bodyStartLine = close + 2;
-        final keyPattern = RegExp(r'^([A-Za-z0-9_-]+)\s*:');
-        for (var i = 1; i < close; i++) {
-          final line = lines[i];
-          if (nameLine == null && RegExp(r'^name\s*:').hasMatch(line)) {
-            nameLine = i + 1;
-          }
-          if (descriptionLine == null &&
-              RegExp(r'^description\s*:').hasMatch(line)) {
-            descriptionLine = i + 1;
-          }
-          // Record the first line of each top-level key (column 0, so
-          // nested/indented keys under maps like `metadata:` are ignored).
-          final match = keyPattern.firstMatch(line);
-          if (match != null) {
-            keyLines.putIfAbsent(match.group(1)!, () => i + 1);
-          }
-        }
-      } else {
-        error = 'Frontmatter opening "---" has no closing "---".';
-        bodyStartLine = 1;
-      }
-    }
-
-    final bodyLines = hasDelimiters
-        ? lines.sublist((bodyStartLine - 1).clamp(0, lines.length))
-        : lines;
-    final body = bodyLines.join('\n');
-
     final skillRoot = p.dirname(p.normalize(manifestPath));
     final warnings = <String>[];
-
-    return SkillDocument(
-      manifestPath: p.normalize(manifestPath),
-      skillRoot: skillRoot,
-      rawContent: text,
-      frontmatter: frontmatter,
-      hasFrontmatterDelimiters: hasDelimiters,
-      frontmatterValid: valid,
-      frontmatterError: error,
-      body: body,
-      bodyLines: bodyLines,
-      bodyStartLine: hasDelimiters ? bodyStartLine : 1,
-      nameLine: nameLine,
-      descriptionLine: descriptionLine,
-      frontmatterKeyLines: keyLines,
+    return parseSkillContent(
+      content,
+      manifestPath: manifestPath,
       references: _readSideFolder(skillRoot, 'references', warnings),
       examples: _readSideFolder(skillRoot, 'examples', warnings),
       scripts: _readSideFolder(skillRoot, 'scripts', warnings),

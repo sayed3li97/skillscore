@@ -10,8 +10,12 @@ Codex, and Antigravity authoring guides.**
 Available as an **offline Dart CLI** for terminals and CI, and as a
 **VS Code extension** for inline scoring inside your editor.
 
+> ### ▶ [Try it in your browser → the skillscore playground](playground/)
+> Paste a `SKILL.md`, get its 0–100 score, token budget, and findings instantly. No install, nothing uploaded.
+
 | | Install |
 |---|---|
+| **Browser playground** | [score a SKILL.md online](playground/) |
 | **CLI** | `dart pub global activate skillscore` |
 | **VS Code / Cursor / Windsurf** | [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore) |
 | **Antigravity IDE / VSCodium** | [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore) |

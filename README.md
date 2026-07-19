@@ -32,6 +32,10 @@ A manifest goes in, a score comes out. Every step runs locally.
 
 The parser reads the frontmatter and body, the rule engine runs 27 checks grouped into 7 categories, and the scorer normalizes the result to a 0 to 100 score with a letter grade. There is no network call anywhere in that path.
 
+## Try it in your browser
+
+**[Open the playground →](https://sayed3li97.github.io/skillscore/playground/)** Paste a `SKILL.md` and get its 0-100 score, grade, token budget, and findings instantly. The real scorer is compiled to JavaScript and runs entirely in your browser, so nothing is uploaded and no install is needed.
+
 ## Quickstart
 
 ```bash

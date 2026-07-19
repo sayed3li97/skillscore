@@ -26,6 +26,8 @@ jobs:
         run: dart test
       - name: Self-score the bundled fixtures (smoke test)
         run: dart run bin/skillscore.dart test/fixtures/excellent --min-score 90 --no-color
+      - name: Build the web playground (compile check)
+        run: dart compile js web/main.dart -O2 -o /tmp/skillscore_playground.js
 
   publish-dry-run:
     runs-on: ubuntu-latest

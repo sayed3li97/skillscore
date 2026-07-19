@@ -1,0 +1,3 @@
+# Build byproducts from `dart compile js`; only index.html + main.dart.js ship.
+*.dart.js.map
+*.dart.js.deps

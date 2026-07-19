@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Zero-install web playground:** paste a `SKILL.md` at
+  [the playground](https://sayed3li97.github.io/skillscore/playground/) and get
+  its 0-100 score, grade, per-category rubric, token budget, and findings
+  instantly. The real scorer is compiled to JavaScript with `dart compile js`
+  and runs entirely in the browser — nothing is uploaded, no install needed —
+  with a live guide selector (claude/codex/antigravity/universal) and a
+  shareable permalink.
+- **`package:skillscore/skillscore_web.dart`:** a `dart:io`-free library
+  surface (scorer, rules, token counter, cross-skill analyses) for the web and
+  other JS/Wasm hosts. The pure text parser is now `parseSkillContent`, and the
+  D2 link-chain check reads linked files through a conditional import so the
+  rule engine compiles to the browser.
+
 ## [0.10.0] - 2026-07-14
 
 ### Added
