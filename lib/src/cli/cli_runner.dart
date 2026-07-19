@@ -7,6 +7,7 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
 import '../analysis/conflicts.dart';
+import '../analysis/listing_budget.dart';
 import '../baseline/baseline.dart';
 import '../eval/eval_parser.dart';
 import '../eval/eval_reporter.dart';
@@ -63,6 +64,9 @@ Future<int> runCli(List<String> arguments,
     ..addOption('max-overlap',
         help: '(conflicts) Flag skill pairs whose trigger overlap is at least '
             'this (0.0 to 1.0); exit non-zero when any pair meets it.')
+    ..addOption('max-listing-tokens',
+        help: '(budget) Fail when the combined always-on skill listing exceeds '
+            'this many cl100k tokens.')
     ..addFlag('strict',
         negatable: false, help: 'Treat warning-level findings as errors.')
     ..addFlag('fix',
@@ -121,6 +125,9 @@ Future<int> runCli(List<String> arguments,
   if (rest.first == 'conflicts') {
     return _conflicts(rest.sublist(1), args, stdoutSink, stderrSink);
   }
+  if (rest.first == 'budget') {
+    return _budget(rest.sublist(1), args, stdoutSink, stderrSink);
+  }
 
   return _score(args, registry, stdoutSink, stderrSink);
 }
@@ -136,6 +143,7 @@ Usage:
   skillscore eval validate <path>      Validate an existing evals.json
   skillscore eval run <path>           Run trigger-rate evals (offline, no API key)
   skillscore conflicts <path> ...      Find skills whose descriptions trigger on the same requests
+  skillscore budget <path> ...         Measure the always-on token cost of a set of skills' listings
   skillscore --version
 
 Options:
@@ -515,6 +523,179 @@ String _conflictsJson(
           'overlap': double.parse(c.overlap.toStringAsFixed(4)),
           'shared': c.shared,
           'bothBounded': c.bothBounded,
+        },
+    ],
+  });
+}
+
+// ---------------------------------------------------------------------------
+// budget subcommand
+// ---------------------------------------------------------------------------
+
+int _budget(
+    List<String> paths, ArgResults args, StringSink out, StringSink err) {
+  final format = args['format'] as String;
+  final noColor = args['no-color'] as bool;
+
+  int? maxListingTokens;
+  final rawMax = args['max-listing-tokens'] as String?;
+  if (rawMax != null) {
+    maxListingTokens = int.tryParse(rawMax);
+    if (maxListingTokens == null || maxListingTokens < 0) {
+      err.writeln('Error: --max-listing-tokens must be a non-negative integer '
+          '(got "$rawMax").');
+      return exitUsage;
+    }
+  }
+
+  if (paths.isEmpty) {
+    err.writeln('Error: "budget" needs one or more paths, '
+        'e.g. skillscore budget skills/');
+    return exitUsage;
+  }
+
+  final skillParser = SkillParser();
+  final warnings = <String>[];
+  final seen = <String>{};
+  final manifests = <String>[];
+  for (final path in paths) {
+    try {
+      for (final m in skillParser.discoverManifests(path, warnings: warnings)) {
+        if (seen.add(m)) manifests.add(m);
+      }
+    } on SkillInputException catch (e) {
+      warnings.add('$path: ${e.message}');
+    }
+  }
+  manifests.sort();
+
+  final entries = <SkillEntry>[];
+  for (final manifest in manifests) {
+    try {
+      final doc = skillParser.parseFile(manifest);
+      warnings.addAll(doc.parseWarnings);
+      entries.add(SkillEntry(
+        name: doc.displayName,
+        path: doc.manifestPath,
+        description: doc.description ?? '',
+      ));
+    } on SkillInputException catch (e) {
+      warnings.add('Skipping $manifest: ${e.message}');
+    }
+  }
+
+  for (final warning in warnings) {
+    err.writeln('warning: $warning');
+  }
+
+  final budget = ListingBudgetAnalyzer(TokenCounter().count).analyze(entries);
+  final overBudget =
+      maxListingTokens != null && budget.totalCl100k > maxListingTokens;
+
+  if (format == 'json') {
+    out.writeln(_budgetJson(budget, maxListingTokens, overBudget));
+  } else {
+    _printBudget(out, budget, maxListingTokens, overBudget, !noColor);
+  }
+
+  return overBudget ? exitFailedGate : exitOk;
+}
+
+String _thousands(int n) {
+  final s = n.abs().toString();
+  final buf = StringBuffer(n < 0 ? '-' : '');
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+    buf.write(s[i]);
+  }
+  return buf.toString();
+}
+
+void _printBudget(StringSink out, ListingBudget budget, int? maxListingTokens,
+    bool overBudget, bool color) {
+  String paint(String s, String code) => color ? '\x1B[${code}m$s\x1B[0m' : s;
+
+  if (budget.skillCount == 0) {
+    out.writeln('No skill manifests found to measure.');
+    return;
+  }
+
+  out.writeln("Skill listing budget — every skill's name + description is "
+      'loaded into the');
+  out.writeln('system prompt on every request so the agent can route, whether '
+      'or not the');
+  out.writeln('skill runs.');
+  out.writeln();
+  out.writeln('  ${paint('${budget.skillCount} '
+          '${budget.skillCount == 1 ? 'skill adds' : 'skills add'} '
+          '${_thousands(budget.totalCl100k)} tokens', '1')} (cl100k) / '
+      '~${_thousands(budget.totalClaude)} (Claude est.) to every prompt.');
+  out.writeln();
+  out.writeln('  ${'tokens'.padLeft(6)}  description  skill');
+  for (final e in budget.entries) {
+    final desc =
+        '${e.descriptionChars} ${e.descriptionChars == 1 ? 'char' : 'chars'}';
+    final line = StringBuffer('  ${_thousands(e.tokensCl100k).padLeft(6)}  '
+        '${desc.padLeft(11)}  ${e.name}');
+    if (e.overflowsRoutingWindow) {
+      line.write('   ${paint('⚠ ${e.overflowChars} past the '
+          '$routingDescriptionLimit-char routing window', '33')}');
+    }
+    out.writeln(line);
+  }
+
+  final overflowing = budget.overflowing;
+  if (overflowing.isNotEmpty) {
+    out.writeln();
+    out.writeln(paint(
+        '⚠ ${overflowing.length} '
+            '${overflowing.length == 1 ? "skill's description is" : "skills' descriptions are"} '
+            'longer than $routingDescriptionLimit characters; the tail never '
+            'reaches the',
+        '33'));
+    out.writeln('  routing agent (rule B6). Trim '
+        '${overflowing.length == 1 ? 'it' : 'them'} so the trigger clause '
+        'survives.');
+  }
+
+  if (maxListingTokens != null) {
+    out.writeln();
+    if (overBudget) {
+      out.writeln(paint(
+          'Budget: ${_thousands(budget.totalCl100k)} / '
+              '${_thousands(maxListingTokens)} tokens — over by '
+              '${_thousands(budget.totalCl100k - maxListingTokens)}. '
+              'Trim the largest skills above.',
+          '31'));
+    } else {
+      out.writeln(paint(
+          'Budget: ${_thousands(budget.totalCl100k)} / '
+              '${_thousands(maxListingTokens)} tokens. Within budget.',
+          '32'));
+    }
+  }
+}
+
+String _budgetJson(
+    ListingBudget budget, int? maxListingTokens, bool overBudget) {
+  return const JsonEncoder.withIndent('  ').convert({
+    'tool': {'name': 'skillscore', 'subcommand': 'budget'},
+    'skillCount': budget.skillCount,
+    'totalTokensCl100k': budget.totalCl100k,
+    'totalTokensClaude': budget.totalClaude,
+    'routingDescriptionLimit': routingDescriptionLimit,
+    'maxListingTokens': maxListingTokens,
+    'overBudget': overBudget,
+    'skills': [
+      for (final e in budget.entries)
+        {
+          'name': e.name,
+          'path': e.path,
+          'descriptionChars': e.descriptionChars,
+          'tokensCl100k': e.tokensCl100k,
+          'tokensClaude': e.tokensClaude,
+          'overflowsRoutingWindow': e.overflowsRoutingWindow,
+          'overflowChars': e.overflowChars,
         },
     ],
   });

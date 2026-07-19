@@ -2,7 +2,8 @@
 
 import 'skill_terms.dart';
 
-/// One skill's identity for cross-skill conflict analysis.
+/// One skill's identity for cross-skill analysis (conflict detection and
+/// listing-budget accounting).
 class SkillEntry {
   /// Creates a skill entry.
   const SkillEntry({
