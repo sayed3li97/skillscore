@@ -14,6 +14,7 @@
 library;
 
 export 'src/analysis/conflicts.dart';
+export 'src/analysis/listing_budget.dart';
 export 'src/analysis/skill_terms.dart';
 export 'src/baseline/baseline.dart';
 export 'src/cli/cli_runner.dart' show exitFailedGate, exitOk, exitUsage, runCli;

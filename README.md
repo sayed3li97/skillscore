@@ -286,6 +286,44 @@ skill a specific, non-overlapping trigger and an explicit "do not use for ..."
 boundary so the agent can tell them apart. It is fully offline and
 deterministic, and reuses the same term extraction as the eval harness.
 
+## Measure the always-on cost with `budget`
+
+Every installed skill's `name` and `description` is loaded into the system
+prompt on **every** request, so the agent can decide which skill (if any) to
+run. You pay that cost whether or not a skill ever fires, and it grows with
+each skill you add. Let it grow too large and skills start getting dropped from
+the prompt or mis-routed, silently. No single skill's score can show you this,
+because it is a property of the whole set.
+
+`skillscore budget` measures it: the combined token cost of a folder of skills,
+the per-skill breakdown largest-first, and a flag on any description that
+overflows the 250-character routing window (the tail the agent never sees, per
+rule `B6`).
+
+```text
+Skill listing budget — every skill's name + description is loaded into the
+system prompt on every request so the agent can route, whether or not the
+skill runs.
+
+  6 skills add 163 tokens (cl100k) / ~182 (Claude est.) to every prompt.
+
+  tokens  description  skill
+      58    247 chars  pdf-form-filler
+      40    165 chars  make-pancakes
+     111    496 chars  verbose-skill   ⚠ 246 past the 250-char routing window
+```
+
+```bash
+skillscore budget skills/                              # report (advisory, exits 0)
+skillscore budget skills/ --max-listing-tokens 2000    # CI gate: exit 1 when over budget
+skillscore budget skills/ --format json                # machine-readable totals
+```
+
+Set `--max-listing-tokens` to your runtime's real ceiling to gate a growing
+fleet in CI, the same way `--min-score` gates quality. It reuses the same
+tiktoken counter as the token-budget scoring, so it is fully offline and
+deterministic.
+
 ## Output formats and CI
 
 Three renderers, one flag. `pretty` (the default) is the colored scorecard; `json` is a stable machine shape for dashboards; `sarif` is a valid SARIF 2.1.0 document that GitHub code scanning renders as inline PR annotations.
@@ -316,6 +354,7 @@ skillscore eval init <path>        Scaffold evals.json from the skill's descript
 skillscore eval validate <path>    Validate and summarize evals.json
 skillscore eval run <path>         Run trigger-rate evals offline (no API key)
 skillscore conflicts <path> ...    Find skills that trigger on the same requests
+skillscore budget <path> ...       Measure the always-on token cost of a set of skills
 skillscore --version
 skillscore --help
 ```
@@ -325,6 +364,7 @@ skillscore --help
 | `--target` | `claude` \| `antigravity` \| `codex` \| `universal` | `universal` | Which guide's ruleset to apply |
 | `--format` | `pretty` \| `json` \| `sarif` | `pretty` | Output format (SARIF renders in code-review tools) |
 | `--min-score <n>` | 0 to 100 | unset | Exit non-zero if any skill scores below `n` |
+| `--max-listing-tokens <n>` | integer | unset | (budget) Exit non-zero when the combined listing exceeds `n` tokens |
 | `--baseline <file>` | path | unset | Gate on new findings only; tolerate the recorded backlog. Created if missing |
 | `--update-baseline` | flag | off | Rewrite the `--baseline` file from the current findings |
 | `--fix` | flag | off | Apply safe auto-fixes in place (rename a misspelled key), then re-score |

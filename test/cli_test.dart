@@ -272,6 +272,99 @@ void main() {
     });
   });
 
+  group('budget command', () {
+    test('measures the always-on listing cost of a skill tree', () async {
+      final result = await run(['budget', fixture(''), '--no-color']);
+      expect(result.code, exitOk);
+      expect(result.out, contains('Skill listing budget'));
+      expect(result.out, contains('to every prompt.'));
+      expect(result.out, contains('tokens  description  skill'));
+    });
+
+    test('--format json emits parseable totals and per-skill entries',
+        () async {
+      final result = await run(['budget', fixture(''), '--format', 'json']);
+      expect(result.code, exitOk);
+      final json = jsonDecode(result.out) as Map<String, Object?>;
+      expect(json['skillCount'], isA<int>());
+      expect(json['skillCount'], greaterThanOrEqualTo(2));
+      expect(json['totalTokensCl100k'], isA<int>());
+      expect(json['totalTokensCl100k'], greaterThan(0));
+      expect(json['routingDescriptionLimit'], 250);
+      expect(json['maxListingTokens'], isNull);
+      expect(json['overBudget'], isFalse);
+      final skills = json['skills'] as List<Object?>;
+      expect(skills.length, json['skillCount']);
+      final first = skills.first as Map<String, Object?>;
+      expect(first.keys,
+          containsAll(['name', 'tokensCl100k', 'overflowsRoutingWindow']));
+      // Entries are sorted by token cost, largest first.
+      final costs = [for (final s in skills) (s as Map)['tokensCl100k'] as int];
+      for (var i = 1; i < costs.length; i++) {
+        expect(costs[i - 1], greaterThanOrEqualTo(costs[i]));
+      }
+    });
+
+    test('--max-listing-tokens fails the gate when the listing is over budget',
+        () async {
+      final result = await run(
+          ['budget', fixture(''), '--max-listing-tokens', '1', '--no-color']);
+      expect(result.code, exitFailedGate);
+      expect(result.out, contains('over by'));
+    });
+
+    test('--max-listing-tokens passes when within budget', () async {
+      final result = await run([
+        'budget',
+        fixture(''),
+        '--max-listing-tokens',
+        '100000',
+        '--no-color',
+      ]);
+      expect(result.code, exitOk);
+      expect(result.out, contains('Within budget'));
+    });
+
+    test('invalid --max-listing-tokens exits 2', () async {
+      final result =
+          await run(['budget', fixture(''), '--max-listing-tokens', 'lots']);
+      expect(result.code, exitUsage);
+    });
+
+    test('no path exits 2 with guidance', () async {
+      final result = await run(['budget']);
+      expect(result.code, exitUsage);
+      expect(result.err, contains('needs one or more paths'));
+    });
+
+    test('flags a description past the 250-char routing window', () async {
+      final dir = Directory.systemTemp.createTempSync('sk_budget_');
+      try {
+        File('${dir.path}/a/SKILL.md')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('---\nname: tidy-skill\n'
+              'description: Fills PDF forms. Use when the user asks to fill a '
+              'PDF form. Do not use for scans.\n---\n# Tidy\n');
+        final longDescription = 'Generates reports. ${'x' * 300}';
+        File('${dir.path}/b/SKILL.md')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('---\nname: verbose-skill\n'
+              'description: $longDescription\n---\n# Verbose\n');
+        final result = await run(['budget', dir.path, '--format', 'json']);
+        expect(result.code, exitOk);
+        final json = jsonDecode(result.out) as Map<String, Object?>;
+        final skills = (json['skills'] as List).cast<Map<String, Object?>>();
+        final verbose = skills.firstWhere((s) => s['name'] == 'verbose-skill');
+        expect(verbose['overflowsRoutingWindow'], isTrue);
+        expect(verbose['overflowChars'], greaterThan(0));
+        final tidy = skills.firstWhere((s) => s['name'] == 'tidy-skill');
+        expect(tidy['overflowsRoutingWindow'], isFalse);
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+  });
+
   group('--fix', () {
     Directory tempSkill(String manifest) {
       final dir = Directory.systemTemp.createTempSync('sk_fix_');

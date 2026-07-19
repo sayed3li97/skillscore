@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`skillscore budget <path> ...`:** measure the always-on token cost of a set
+  of skills. Every installed skill's `name` and `description` is loaded into the
+  system prompt on every request so the agent can route, a cost paid whether or
+  not the skill ever runs and one that grows with each skill added — until the
+  listing is large enough that skills get silently dropped or mis-routed. The
+  command reports the combined cl100k / Claude-estimated token cost, a per-skill
+  breakdown largest-first, and flags any description that overflows the
+  250-character routing window (rule `B6`). `--max-listing-tokens <n>` turns it
+  into a CI gate that exits non-zero when the combined listing is over budget,
+  and `--format json` emits the totals and per-skill entries. Fully offline and
+  deterministic, reusing the same tiktoken counter as token-budget scoring.
+
 ## [0.10.0] - 2026-07-14
 
 ### Added
