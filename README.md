@@ -336,6 +336,17 @@ Prefer to score inside your IDE? The **[Skillscore VS Code extension](https://gi
 
 Install from the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=sayed-ali-alkamel.skillscore) or [Open VSX](https://open-vsx.org/extension/sayed-ali-alkamel/skillscore).
 
+## Use it inside Claude Code — a skill that scores skills
+
+skillscore ships as an installable agent skill of its own, in [`skill/skillscore/`](skill/skillscore/SKILL.md). Drop it into your agent's skills folder (for Claude Code, `~/.claude/skills/`) and the agent can score the `SKILL.md` it just wrote, in-loop, before saving it:
+
+```bash
+cp -r skill/skillscore ~/.claude/skills/skillscore
+# then, in Claude Code: "score this skill" / "check my SKILL.md"
+```
+
+It shells out to the real CLI (via `skillscore` or `npx skillscore`), so the grade is the tool's deterministic score, not a guess from memory. Fittingly, the skill scores **100/100** against skillscore itself — CI enforces it on every push.
+
 ## Library use
 
 skillscore is also a Dart library:
