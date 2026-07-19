@@ -1,0 +1,7 @@
+[
+  { "os": "darwin", "cpu": "x64",   "runner": "macos-13",        "exe": "skillscore" },
+  { "os": "darwin", "cpu": "arm64", "runner": "macos-14",        "exe": "skillscore" },
+  { "os": "linux",  "cpu": "x64",   "runner": "ubuntu-latest",   "exe": "skillscore" },
+  { "os": "linux",  "cpu": "arm64", "runner": "ubuntu-24.04-arm", "exe": "skillscore" },
+  { "os": "win32",  "cpu": "x64",   "runner": "windows-latest",  "exe": "skillscore.exe" }
+]
