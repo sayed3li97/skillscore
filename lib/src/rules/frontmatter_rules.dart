@@ -57,7 +57,8 @@ class NameFormatRule extends BaseRule {
   @override
   String get id => 'A2_name_format';
   @override
-  String get title => 'name is <=64 chars of lowercase letters/digits/hyphens';
+  String get title =>
+      'name is <=64 chars, lowercase/digits/hyphens, no edge or double hyphens';
   @override
   String get sourceGuide => 'Anthropic';
   @override
@@ -68,15 +69,17 @@ class NameFormatRule extends BaseRule {
   Severity get defaultSeverity => Severity.error;
   @override
   String get rationale =>
-      'Skill names are machine identifiers. Anthropic and Antigravity both '
-      'restrict them to lowercase letters, numbers, and hyphens, at most 64 '
-      'characters, so agents can address skills consistently.';
+      'Skill names are machine identifiers. The spec restricts them to '
+      'lowercase letters, numbers, and hyphens, at most 64 characters, and '
+      'they must not start or end with a hyphen or contain consecutive '
+      'hyphens ("--"), so agents can address skills consistently.';
   @override
   String get fixHint =>
-      'Rename the skill to lowercase-hyphenated form, e.g. "pdf-form-filler", '
-      'and keep it at 64 characters or fewer.';
+      'Rename the skill to lowercase-hyphenated form, e.g. "pdf-form-filler": '
+      'at most 64 characters, no leading, trailing, or doubled hyphens.';
 
   static final RegExp _valid = RegExp(r'^[a-z0-9-]+$');
+  static final RegExp _hyphenClean = RegExp(r'^[a-z0-9]+(-[a-z0-9]+)*$');
 
   @override
   RuleResult evaluate(SkillDocument doc, Target target) {
@@ -97,6 +100,12 @@ class NameFormatRule extends BaseRule {
       problems.add(finding(
         '"name" may contain only lowercase letters, numbers, and hyphens '
         '(found "$name").',
+        line: doc.nameLine,
+      ));
+    } else if (!_hyphenClean.hasMatch(name)) {
+      problems.add(finding(
+        '"name" must not start or end with a hyphen or contain consecutive '
+        'hyphens (found "$name").',
         line: doc.nameLine,
       ));
     }
@@ -224,7 +233,7 @@ class FrontmatterKeysRule extends BaseRule {
   String get fixHint =>
       'Fix the misspelled key, remove it, or move custom fields under a '
       '"metadata:" map. Recognized keys: name, description, license, '
-      'allowed-tools, metadata, version.';
+      'compatibility, allowed-tools, metadata.';
 
   /// Top-level keys the SKILL.md frontmatter format recognizes. Custom
   /// data belongs under `metadata`, which is the sanctioned escape hatch.
@@ -232,8 +241,12 @@ class FrontmatterKeysRule extends BaseRule {
     'name',
     'description',
     'license',
+    'compatibility',
     'allowed-tools',
     'metadata',
+    // Not in the six-field spec, but widely used at the top level in the wild;
+    // tolerated so real skills are not falsely flagged. The spec puts it under
+    // "metadata".
     'version',
   };
 
@@ -278,6 +291,87 @@ class FrontmatterKeysRule extends BaseRule {
       }
     }
     return best;
+  }
+}
+
+/// A6: the experimental `allowed-tools` field is well formed and scoped to the
+/// least privilege the skill needs.
+///
+/// The 2026 SKILL.md spec adds `allowed-tools`: a space-separated list of tools
+/// an agent may run without asking, e.g. `Bash(git:*) Bash(jq:*) Read`. A
+/// malformed entry is silently ignored (so the guard never applies), and a
+/// broad grant such as an unscoped `Bash` or a `Bash(*)` wildcard approves
+/// every command it can reach. This rule flags both.
+class AllowedToolsRule extends BaseRule {
+  @override
+  String get id => 'A6_allowed_tools';
+  @override
+  String get title =>
+      'allowed-tools entries are well formed and scoped (least privilege)';
+  @override
+  String get sourceGuide => 'Anthropic';
+  @override
+  int get maxPoints => 2;
+  @override
+  Set<Target> get targets => Target.values.toSet();
+  @override
+  Severity get defaultSeverity => Severity.warning;
+  @override
+  String get rationale =>
+      'The experimental "allowed-tools" field pre-approves tools an agent may '
+      'run without a prompt. A malformed entry is silently ignored, and a '
+      'broad grant like an unscoped "Bash" or a "Bash(*)" wildcard hands the '
+      'agent a blank cheque. Scope every grant to the commands the skill needs.';
+  @override
+  String get fixHint =>
+      'Write each tool as a space-separated token, scoping shells to the '
+      'commands you need: "Bash(git:*) Bash(jq:*) Read". Avoid a bare "Bash" '
+      'or a "(*)" wildcard scope.';
+
+  // A grant is `Name` or `Name(scope)`, e.g. `Read` or `Bash(git:*)`.
+  static final RegExp _token = RegExp(r'^[A-Za-z][A-Za-z0-9_-]*(\([^()]*\))?$');
+
+  @override
+  RuleResult evaluate(SkillDocument doc, Target target) {
+    final raw = doc.frontmatter['allowed-tools'];
+    if (raw == null) return pass();
+    // A non-string (e.g. a YAML list) or an empty value is out of this rule's
+    // scope; A5 already covers structural key problems.
+    if (raw is! String || raw.trim().isEmpty) return pass();
+    final line = doc.frontmatterKeyLines['allowed-tools'] ?? doc.nameLine;
+
+    final problems = <Finding>[];
+    for (final token in raw.trim().split(RegExp(r'\s+'))) {
+      if (!_token.hasMatch(token)) {
+        problems.add(finding(
+          'Malformed allowed-tools entry "$token"; write it as "Tool" or '
+          '"Tool(scope)", e.g. "Bash(git:*)".',
+          line: line,
+        ));
+        continue;
+      }
+      final open = token.indexOf('(');
+      final name = open == -1 ? token : token.substring(0, open);
+      final scope = open == -1
+          ? null
+          : token.substring(open + 1, token.length - 1).trim();
+      // An unscoped shell, or a wildcard-only scope, grants far more than any
+      // single skill needs.
+      if (scope == null && (name == 'Bash' || name == 'Shell')) {
+        problems.add(finding(
+          'Unscoped "$name" in allowed-tools approves every command; scope it, '
+          'e.g. "$name(git:*)".',
+          line: line,
+        ));
+      } else if (scope == '*' || scope == ':*') {
+        problems.add(finding(
+          'Wildcard scope "$token" in allowed-tools approves everything; scope '
+          'it to the commands the skill needs.',
+          line: line,
+        ));
+      }
+    }
+    return problems.isEmpty ? pass() : fail(problems);
   }
 }
 
