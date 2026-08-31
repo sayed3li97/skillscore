@@ -26,6 +26,8 @@ jobs:
         run: dart test
       - name: Self-score the bundled fixtures (smoke test)
         run: dart run bin/skillscore.dart test/fixtures/excellent --min-score 90 --no-color
+      - name: Score the bundled skill (dogfood — the skill that scores skills must score 100)
+        run: dart run bin/skillscore.dart skill/skillscore/ --min-score 100 --no-color
 
   publish-dry-run:
     runs-on: ubuntu-latest
