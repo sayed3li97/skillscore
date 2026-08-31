@@ -47,6 +47,15 @@ void main() {
       final result = evaluate(rule, manifestWith(name: '企業-スキル'));
       expect(result.points, 0);
     });
+    test('fails on consecutive hyphens', () {
+      final result = evaluate(rule, manifestWith(name: 'pdf--filler'));
+      expect(result.points, 0);
+      expect(result.findings.single.message, contains('consecutive hyphens'));
+    });
+    test('fails on a leading or trailing hyphen', () {
+      expect(evaluate(rule, manifestWith(name: '-pdf')).points, 0);
+      expect(evaluate(rule, manifestWith(name: 'pdf-')).points, 0);
+    });
   });
 
   group('A3_name_reserved_words', () {
@@ -113,6 +122,15 @@ void main() {
           'version: "1.0"\n'
           'metadata:\n'
           '  author: someone\n'
+          '---\n';
+      expect(evaluate(rule, manifest).points, 2);
+    });
+
+    test('recognizes the compatibility key', () {
+      const manifest = '---\n'
+          'name: x\n'
+          'description: A skill. Use when asked.\n'
+          'compatibility: Requires network access.\n'
           '---\n';
       expect(evaluate(rule, manifest).points, 2);
     });
@@ -204,6 +222,55 @@ void main() {
           '---\n';
       final f = evaluate(rule, manifest).findings.single;
       expect(f.isFixable, isFalse);
+    });
+  });
+
+  group('A6_allowed_tools', () {
+    final rule = AllowedToolsRule();
+
+    String withTools(String value) => '---\n'
+        'name: x\n'
+        'description: A skill. Use when asked.\n'
+        'allowed-tools: $value\n'
+        '---\n';
+
+    test('passes when allowed-tools is absent', () {
+      expect(evaluate(rule, manifestWith()).points, 2);
+    });
+
+    test('passes a well-scoped grant list', () {
+      expect(
+          evaluate(rule, withTools('Bash(git:*) Bash(jq:*) Read')).points, 2);
+    });
+
+    test('flags a malformed entry', () {
+      final result = evaluate(rule, withTools('Bash(git:*) 2bad Read'));
+      expect(result.points, 0);
+      expect(result.findings.single.message, contains('Malformed'));
+      expect(result.findings.single.message, contains('2bad'));
+    });
+
+    test('flags an unscoped Bash grant as over-broad', () {
+      final result = evaluate(rule, withTools('Bash Read'));
+      expect(result.points, 0);
+      expect(result.findings.single.message, contains('Unscoped'));
+    });
+
+    test('flags a wildcard scope as over-broad', () {
+      final result = evaluate(rule, withTools('Bash(*) Read'));
+      expect(result.points, 0);
+      expect(result.findings.single.message, contains('Wildcard'));
+    });
+
+    test('ignores a non-string allowed-tools value', () {
+      // A YAML list is out of this rule's scope; A5 governs structure.
+      expect(evaluate(rule, withTools('[Read, Write]')).points, 2);
+    });
+
+    test('defaults to WARNING severity', () {
+      final registry = RuleRegistry();
+      final r = registry.byId('A6_allowed_tools')!;
+      expect(registry.effectiveSeverity(r, Target.universal), Severity.warning);
     });
   });
 }

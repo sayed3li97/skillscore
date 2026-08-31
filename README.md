@@ -27,10 +27,10 @@ Because an agent keeps every skill's `name` and `description` in its context bud
 A manifest goes in, a score comes out. Every step runs locally.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/pipeline.svg" alt="Pipeline diagram: SKILL.md to Parser to a Rule engine of 26 rules across 7 categories to the Scorer that normalizes to 0-100 to a Scorecard, with a note that every step is on-device and skillscore never touches the network" width="100%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/pipeline.svg" alt="Pipeline diagram: SKILL.md to Parser to a Rule engine of 27 rules across 7 categories to the Scorer that normalizes to 0-100 to a Scorecard, with a note that every step is on-device and skillscore never touches the network" width="100%">
 </p>
 
-The parser reads the frontmatter and body, the rule engine runs 26 checks grouped into 7 categories, and the scorer normalizes the result to a 0 to 100 score with a letter grade. There is no network call anywhere in that path.
+The parser reads the frontmatter and body, the rule engine runs 27 checks grouped into 7 categories, and the scorer normalizes the result to a 0 to 100 score with a letter grade. There is no network call anywhere in that path.
 
 ## Quickstart
 
@@ -62,7 +62,7 @@ skillscore skills/ --min-score 80
 100 points, seven categories, each rule tagged with the authoring guide it comes from.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/rubric.svg" alt="Rubric diagram: horizontal weight bars for Frontmatter validity 17 points, Description quality 28, Conciseness and token economy 15, Structure and progressive disclosure 15, Instruction quality 20, Content hygiene 10, and a Safety and scripts penalty up to minus 15, normalized to 0-100" width="100%">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/diagrams/rubric.svg" alt="Rubric diagram: horizontal weight bars for Frontmatter validity 19 points, Description quality 28, Conciseness and token economy 15, Structure and progressive disclosure 15, Instruction quality 20, Content hygiene 10, and a Safety and scripts penalty up to minus 15, normalized to 0-100" width="100%">
 </p>
 
 Each rule awards full, partial, or zero points. Category G (safety) is a **penalty** of up to `-15` that applies only when a skill ships scripts or terminal commands. Profiles that exclude a rule (for example `--target claude` excludes the Codex-specific B4) are normalized back to a 0 to 100 scale, so scores stay comparable across targets.
@@ -70,15 +70,16 @@ Each rule awards full, partial, or zero points. Category G (safety) is a **penal
 **Grades:** A is 90 and up, B is 80 and up, C is 70 and up, D is 60 and up, F is below 60.
 
 <details>
-<summary><b>The full rubric (all 26 rules)</b></summary>
+<summary><b>The full rubric (all 27 rules)</b></summary>
 
 | Rule | Title | Pts | Severity | Targets | Source |
 |---|---|---|---|---|---|
 | `A1_frontmatter_present` | YAML frontmatter delimited by `---` | 4 | error | all | Anthropic |
-| `A2_name_format` | `name` at most 64 chars, lowercase / digits / hyphens | 4 | error | all | Anthropic |
+| `A2_name_format` | `name` at most 64 chars, lowercase / digits / hyphens, no edge or double hyphens | 4 | error | all | Anthropic |
 | `A3_name_reserved_words` | `name` avoids "anthropic" and "claude" | 3 | error (claude) / info | all | Anthropic |
 | `A4_description_present` | `description` present, at most 1024 chars | 4 | error | all | Anthropic |
 | `A5_frontmatter_keys` | Only recognized keys, no typos ("did you mean") | 2 | warning | all | Anthropic |
+| `A6_allowed_tools` | `allowed-tools` entries well formed and scoped (least privilege) | 2 | warning | all | Anthropic |
 | `B1_description_what` | States WHAT (opens with an action verb) | 6 | warning | all | Anthropic |
 | `B2_description_when` | States WHEN ("use when ...") | 6 | warning | all | Anthropic |
 | `B3_third_person` | Written in third person | 5 | warning | all | Anthropic |
@@ -164,7 +165,7 @@ Descriptions dense with trigger keywords run toward +18 to +20%; clean prose run
 
 ## Catching frontmatter typos (rule A5)
 
-The `SKILL.md` frontmatter is a fixed set of keys (`name`, `description`, `license`, `allowed-tools`, `metadata`, `version`), and YAML gives you no protection when you misspell one. Write `descrption:` and YAML happily accepts it as an unknown field while the real `description` goes *missing*. The skill still loads, but with empty metadata it is invocable only by name and is **never auto-triggered**. Strict validators, including Anthropic's own `skill-creator`, reject any unexpected key outright.
+The `SKILL.md` frontmatter is a fixed set of keys (`name`, `description`, `license`, `compatibility`, `allowed-tools`, `metadata`), and YAML gives you no protection when you misspell one. Write `descrption:` and YAML happily accepts it as an unknown field while the real `description` goes *missing*. The skill still loads, but with empty metadata it is invocable only by name and is **never auto-triggered**. Strict validators, including Anthropic's own `skill-creator`, reject any unexpected key outright.
 
 Rule **`A5_frontmatter_keys`** catches this. It flags every top-level key outside the recognized set, and when the key is a near-miss for a real one (within an edit distance of two) it tells you which key you meant:
 
@@ -190,6 +191,23 @@ When a finding has a safe, mechanical correction, skillscore marks it `[fixable]
 </p>
 
 One typo drops the skill to a D (the real `description` is missing, so the description rules all fail); `--fix` recovers it to a perfect A. The fix is deterministic and idempotent, preserves your line endings, and only ever touches a key that has a confident "did you mean" match. Keys with no near match (move them under `metadata` yourself) are left untouched, never guessed at.
+
+## Least-privilege tool permissions (rule A6)
+
+The 2026 `SKILL.md` spec adds an experimental `allowed-tools` field: a space-separated list of tools the agent may run **without stopping to ask**, for example `Bash(git:*) Bash(jq:*) Read`. It is a real capability grant. Scope it tightly and the skill can run exactly the commands it needs; write it loosely and you have handed an autonomous agent a blank cheque.
+
+Two mistakes are easy to make and impossible to see by eye. A **malformed** entry (a stray token, a typo'd tool name) is silently ignored, so a grant you thought you wrote never takes effect. An **over-broad** entry, an unscoped `Bash` that approves every shell command, or a `Bash(*)` wildcard, quietly widens the blast radius of anything the agent decides to do.
+
+Rule **`A6_allowed_tools`** is the only skill linter that audits this. It parses every grant, flags malformed tokens, and warns on unscoped shells and wildcard scopes so least privilege is the default, not an afterthought:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sayed3li97/skillscore/main/docs/assets/shots/allowed-tools.png" alt="skillscore scoring an otherwise-perfect pdf-form-filler skill 98 out of 100 grade A, with the Frontmatter validity category at 17 out of 19 and an A6 warning: Unscoped Bash in allowed-tools approves every command, scope it, e.g. Bash(git colon star)" width="82%">
+</p>
+
+- **Scoped grants pass, blanket grants warn.** `Bash(git:*)` and `Read` are fine; a bare `Bash` or a `Bash(*)` earns a warning that names the offending token and shows the scoped form to use instead.
+- **Malformed entries never pass silently.** A token that is not a valid `Tool` or `Tool(scope)` is reported, not skipped, so a grant that would have been dropped on load is caught first.
+- **Advisory, not a gate by default.** A6 is a WARNING: it shapes good habits without blocking a skill that has a deliberate reason to grant broadly. Pair it with `--strict` in CI when you want least privilege enforced.
+- **Fully offline and deterministic**, like every other rule. No network, no model, no telemetry.
 
 ## Eval harness
 
