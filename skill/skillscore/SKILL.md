@@ -2,7 +2,7 @@
 name: skillscore
 description: Scores, lints, and validates an agent skill or SKILL.md for quality, 0-100 with fixes, using the offline skillscore CLI. Use when asked to check, review, grade, or improve a skill's SKILL.md. Do not use for prose or non-skill Markdown.
 license: Apache-2.0
-allowed-tools: Bash(skillscore:*), Bash(npx:*), Read
+allowed-tools: Bash(skillscore:*) Bash(npx:*) Read
 ---
 
 # skillscore

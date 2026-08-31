@@ -20,6 +20,8 @@ category. Run `skillscore rules` for the live table from your installed version.
 - `A3_name_reserved_words` — `name` avoids reserved vendor words.
 - `A4_description_present` — `description` present, at most 1024 chars.
 - `A5_frontmatter_keys` — only recognized keys, with a "did you mean" hint.
+- `A6_allowed_tools` — `allowed-tools` entries well formed and least-privilege
+  scoped (space-separated `Tool` or `Tool(scope)`, no bare `Bash`).
 
 ## B. Description quality
 
